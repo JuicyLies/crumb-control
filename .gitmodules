@@ -1,0 +1,3 @@
+[submodule "Consent-O-Matic"]
+	path = Consent-O-Matic
+	url = https://github.com/cavi-au/Consent-O-Matic.git

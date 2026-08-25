@@ -1,0 +1,43 @@
+{
+  "name": "universal-data-permission-layer",
+  "version": "0.1.0",
+  "description": "Universal Data Permission Layer - MV3 browser extension for unified consent management",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/JuicyLies/UniversalDataPermissionLayer"
+  },
+  "scripts": {
+    "build:chrome": "webpack --env target=chrome --mode production",
+    "build:firefox": "webpack --env target=firefox --mode production",
+    "build:safari": "webpack --env target=safari --mode production",
+    "build": "npm run build:chrome && npm run build:firefox && npm run build:safari",
+    "dev:chrome": "webpack --env target=chrome --mode development --watch",
+    "dev:firefox": "webpack --env target=firefox --mode development --watch",
+    "lint": "eslint src/",
+    "test": "jest"
+  },
+  "dependencies": {
+    "js-yaml": "^4.1.0"
+  },
+  "devDependencies": {
+    "@babel/core": "^8.0.1",
+    "@babel/preset-env": "^8.0.2",
+    "babel-loader": "^10.1.1",
+    "copy-webpack-plugin": "^12.0.2",
+    "css-loader": "^7.1.2",
+    "css-minimizer-webpack-plugin": "^7.0.0",
+    "eslint": "^9.0.0",
+    "glob": "^10.3.12",
+    "html-minimizer-webpack-plugin": "^5.0.0",
+    "jest": "^29.7.0",
+    "mini-css-extract-plugin": "^2.9.0",
+    "sass": "^1.77.0",
+    "sass-loader": "^16.0.5",
+    "style-loader": "^4.0.0",
+    "terser-webpack-plugin": "^5.3.10",
+    "webpack": "^5.92.0",
+    "webpack-cli": "^5.1.4",
+    "zip-webpack-plugin": "^4.0.1"
+  }
+}

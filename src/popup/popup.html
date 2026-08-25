@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Universal Data Permission Layer</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="popup-container">
+    <header class="popup-header">
+      <div class="logo">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="2" y="2" width="20" height="20" rx="2"/>
+          <path d="M9 12l2 2 4-4"/>
+        </svg>
+      </div>
+      <div class="title-section">
+        <h1>Universal Data Permission Layer</h1>
+        <span class="version">v0.1.0</span>
+      </div>
+    </header>
+    
+    <div class="popup-content">
+      <div class="status-section">
+        <div class="status-item">
+          <span class="status-label">Current Site</span>
+          <span class="status-value" id="currentSite">—</span>
+        </div>
+        <div class="status-item">
+          <span class="status-label">Protection</span>
+          <span class="status-value" id="protectionStatus">Checking...</span>
+        </div>
+        <div class="status-item">
+          <span class="status-label">CMPs Blocked</span>
+          <span class="status-value" id="cmpsBlocked">0</span>
+        </div>
+      </div>
+      
+      <div class="decisions-section">
+        <h3>Consent Decisions</h3>
+        <div class="decisions-grid" id="decisionsGrid">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+      
+      <div class="actions-section">
+        <button class="btn btn-primary" id="openOptions">Open Dashboard</button>
+        <button class="btn btn-secondary" id="toggleSite">Disable on This Site</button>
+        <button class="btn btn-secondary" id="reportIssue">Report Broken CMP</button>
+      </div>
+      
+      <div class="footer">
+        <a href="#" id="viewAudit">View Audit Log</a>
+        <a href="#" id="exportDSR">Export My Data (DSR)</a>
+      </div>
+    </div>
+  </div>
+  <script type="module" src="popup.js"></script>
+</body>
+</html>
