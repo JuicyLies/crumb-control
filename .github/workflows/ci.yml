@@ -98,8 +98,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            dist/udp-chrome-v${{ github.ref_name }}.zip
-            dist/udp-firefox-v${{ github.ref_name }}.zip
+            dist/*.zip
           generate_release_notes: true
           draft: false
           prerelease: false
