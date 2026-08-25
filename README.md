@@ -102,14 +102,45 @@ export default {
 
 ## Legal Foundation
 
-> ### 🚧 Coming soon
->
-> A detailed write-up of the European legal basis for this project — the relevant
-> regulations, the rights it helps you exercise, and how automated preference
-> signalling fits within them — is being prepared and will be published here.
->
-> **Not yet available. Nothing in this repository should currently be read as a
-> legal claim or as legal advice.**
+### The ePrivacy Regulation — what was supposed to happen
+
+The EU **ePrivacy Regulation** (proposed 2017, intended to replace the 2002/2009 ePrivacy Directive) contained a provision that would have solved the cookie-banner problem at the source:
+
+> **Article 9 (original draft):** Users configure their consent preferences **once in their browser** (e.g., "Block all third-party tracking cookies" / "Accept analytics"). Browsers send a standardised, machine-readable signal to every site. Sites are **legally required** to honour it — no pop-up walls, no per-site banners.
+
+This would have made cookie fatigue a solved problem: **browser-level consent, legally binding.**
+
+### Why it didn't happen
+
+The provision was stripped during legislative negotiations (2018–2021) under heavy lobbying:
+
+| Actor | Argument |
+|---|---|
+| **Google & ad-tech coalitions** | Centralised browser consent hands power to browser vendors (Chrome, Safari, Edge) — Google could set defaults favouring its own ad network. |
+| **Digital publishers (news/media)** | If users set "Reject All" once, sites lose ad revenue without ever getting to ask. |
+| **EU Council (Germany, France, Ireland, others)** | Deadlocked over the text; the mandate was watered down in successive drafts. |
+
+**Result:** the Regulation stalled. Cookie consent today remains under the **old ePrivacy Directive + GDPR** — hence the banner flood.
+
+### Where enforcement has gone instead
+
+With the Regulation stalled, regulators pivoted to enforcing the **GDPR's existing rules on valid consent**:
+
+- **EDPB Guidelines 05/2020** — consent invalid if refusing is materially harder than accepting.
+- **EDPB Guidelines 03/2022** — deceptive design patterns in banners.
+- **CJEU: Planet49 (C‑673/17)** — pre-ticked boxes ≠ valid consent.
+- **CJEU: Orange România (C‑61/19)** — controller bears burden of proving consent.
+- **National DPAs** — fines for Google, Meta, others for making "Reject All" harder than "Accept All."
+
+### Global Privacy Control (GPC)
+
+GPC is an independent technical standard for a browser opt-out signal (`Sec-GPC: 1`). Its legal force varies:
+
+- **California (CCPA/CPRA):** AG treats GPC as a valid opt-out; enforcement actions have cited failure to honour it.
+- **Colorado, Connecticut, other US states:** statutes recognise universal opt-out mechanisms.
+- **EU:** GPC is not named in the GDPR, but **Art. 21(5)** expressly permits objecting *"by automated means using technical specifications"* — the category GPC is designed to occupy.
+
+> **This extension implements what the ePrivacy Regulation would have mandated:** a portable, browser-level preference layer that sends GPC and auto-applies your choices to CMPs — available now, without waiting for the law to catch up.
 
 ---
 
