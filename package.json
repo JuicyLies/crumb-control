@@ -8,10 +8,13 @@
     "url": "https://github.com/JuicyLies/UniversalDataPermissionLayer"
   },
   "scripts": {
-    "build:chrome": "webpack --env target=chrome --mode production",
-    "build:firefox": "webpack --env target=firefox --mode production",
+    "build:chrome": "webpack --env target=chrome --mode production && npm run verify:chrome",
+    "build:firefox": "webpack --env target=firefox --mode production && npm run verify:firefox",
     "build:safari": "webpack --env target=safari --mode production",
-    "build": "npm run build:chrome && npm run build:firefox && npm run build:safari",
+    "build": "npm run build:chrome && npm run build:firefox",
+    "verify:chrome": "node scripts/verify-build.js dist/chrome",
+    "verify:firefox": "node scripts/verify-build.js dist/firefox",
+    "verify": "npm run verify:chrome && npm run verify:firefox",
     "dev:chrome": "webpack --env target=chrome --mode development --watch",
     "dev:firefox": "webpack --env target=firefox --mode development --watch",
     "lint": "eslint src/",

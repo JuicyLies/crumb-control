@@ -41,6 +41,11 @@ jobs:
           test -f dist/firefox/options.js
           echo "All artifacts present"
 
+      - name: Verify builds loadable (manifest references)
+        run: |
+          node scripts/verify-build.js dist/chrome
+          node scripts/verify-build.js dist/firefox
+
       - name: Lint
         run: npm run lint 2>/dev/null || true
 
@@ -57,3 +62,44 @@ jobs:
         with:
           name: udp-firefox
           path: dist/firefox/
+
+  release:
+    needs: build
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build Chrome
+        run: npm run build:chrome
+
+      - name: Build Firefox
+        run: npm run build:firefox
+
+      - name: Verify builds loadable
+        run: |
+          node scripts/verify-build.js dist/chrome
+          node scripts/verify-build.js dist/firefox
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/udp-chrome-v${{ github.ref_name }}.zip
+            dist/udp-firefox-v${{ github.ref_name }}.zip
+          generate_release_notes: true
+          draft: false
+          prerelease: false

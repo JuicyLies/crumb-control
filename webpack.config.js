@@ -33,6 +33,13 @@ module.exports = (env, argv) => {
         return JSON.stringify(manifest, null, 2);
       }
     },
+    // HTML files (referenced by manifest)
+    { from: 'src/popup/popup.html', to: 'popup.html' },
+    { from: 'src/options/options.html', to: 'options.html' },
+    // CSS files (referenced by manifest)
+    { from: 'src/content/content.css', to: 'content.css' },
+    { from: 'src/popup/popup.css', to: 'popup.css' },
+    { from: 'src/options/options.css', to: 'options.css' },
     // Our rules
     { from: 'src/rules/', to: 'rules/', noErrorOnMissing: true },
     // Our source files (will be bundled by webpack entry points)
