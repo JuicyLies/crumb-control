@@ -5,6 +5,6 @@
 /src/shared/PolicyEngine.js    @JuicyLies
 /src/background/background.js  @JuicyLies
 /src/content/content.js        @JuicyLies
-/src/options/options.js        @JuicyLies
+/src/popup/popup.js            @JuicyLies
 /package.json                  @JuicyLies
 /webpack.config.js             @JuicyLies

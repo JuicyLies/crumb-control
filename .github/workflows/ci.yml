@@ -34,11 +34,11 @@ jobs:
           test -f dist/chrome/manifest.json
           test -f dist/chrome/background.js
           test -f dist/chrome/content.js
-          test -f dist/chrome/options.js
+          test -f dist/chrome/popup.js
           test -f dist/firefox/manifest.json
           test -f dist/firefox/background.js
           test -f dist/firefox/content.js
-          test -f dist/firefox/options.js
+          test -f dist/firefox/popup.js
           echo "All artifacts present"
 
       - name: Verify builds loadable (manifest references)
@@ -51,14 +51,14 @@ jobs:
 
       - name: Upload Chrome build
         uses: actions/upload-artifact@v4
-        if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         with:
           name: udp-chrome
           path: dist/chrome/
 
       - name: Upload Firefox build
         uses: actions/upload-artifact@v4
-        if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         with:
           name: udp-firefox
           path: dist/firefox/

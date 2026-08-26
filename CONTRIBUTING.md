@@ -1,12 +1,12 @@
-# Contributing to Universal Data Permission Layer
+# Contributing to Crumb Control
 
 Thank you for contributing! This project aims to be a reliable, legally-grounded tool for automating personal data preferences on the web.
 
 ## Quick Start
 
 ```bash
-git clone --recurse-submodules https://github.com/JuicyLies/UniversalDataPermissionLayer
-cd UniversalDataPermissionLayer
+git clone --recurse-submodules https://github.com/JuicyLies/crumb-control
+cd crumb-control
 npm install
 npm run build:chrome   # verify it compiles
 ```

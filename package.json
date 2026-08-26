@@ -1,11 +1,11 @@
 {
-  "name": "universal-data-permission-layer",
-  "version": "0.2.1",
-  "description": "Universal Data Permission Layer - MV3 browser extension for unified consent management",
+  "name": "crumb-control",
+  "version": "0.3.0",
+  "description": "Crumb Control - MV3 browser extension for unified consent management",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/JuicyLies/UniversalDataPermissionLayer"
+    "url": "https://github.com/JuicyLies/crumb-control"
   },
   "scripts": {
     "build:chrome": "npm run merge-rules && webpack --env target=chrome --mode production && npm run verify:chrome",

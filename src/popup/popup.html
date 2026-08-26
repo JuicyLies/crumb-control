@@ -2,60 +2,281 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Universal Data Permission Layer</title>
+  <title>Crumb Control</title>
   <link rel="stylesheet" href="popup.css">
 </head>
 <body>
-  <div class="popup-container">
-    <header class="popup-header">
-      <div class="logo">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <rect x="2" y="2" width="20" height="20" rx="2"/>
-          <path d="M9 12l2 2 4-4"/>
+  <div class="app">
+    <nav class="sidebar">
+      <div class="sidebar-logo">
+        <img src="../assets/icons/icon_48.png" width="24" height="24" alt="Crumb Control" />
+      </div>
+      <button class="nav-icon-btn active" data-tab="home" title="Status">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/>
         </svg>
-      </div>
-      <div class="title-section">
-        <h1>Universal Data Permission Layer</h1>
-        <span class="version">v0.1.0</span>
-      </div>
-    </header>
-    
-    <div class="popup-content">
-      <div class="status-section">
-        <div class="status-item">
-          <span class="status-label">Current Site</span>
-          <span class="status-value" id="currentSite">—</span>
+      </button>
+      <button class="nav-icon-btn" data-tab="log" title="Log">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="14" y2="18"/>
+        </svg>
+      </button>
+      <button class="nav-icon-btn" data-tab="settings" title="Settings">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="3"/>
+          <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09a1.65 1.65 0 00-1-1.51 1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09a1.65 1.65 0 001.51-1 1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/>
+        </svg>
+      </button>
+      <button class="nav-icon-btn" data-tab="about" title="About">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>
+        </svg>
+      </button>
+    </nav>
+
+    <div class="main">
+      <!-- ===== Home / Status ===== -->
+      <section class="tab-panel active" id="tab-home">
+        <header class="main-header">
+          <h1>Status</h1>
+          <span class="site-name" id="currentSite">—</span>
+        </header>
+        <div class="main-content">
+          <div class="status-banner" id="protectionStatus">Checking...</div>
+
+          <div class="section-label">Consent decisions</div>
+          <div class="decisions-grid" id="decisionsGrid"><!-- populated by JS --></div>
+
+          <div class="home-actions">
+            <button class="btn btn-secondary" id="toggleSite">Disable on this site</button>
+            <button class="btn btn-ghost" id="reportIssue">Report broken cookie banner</button>
+          </div>
         </div>
-        <div class="status-item">
-          <span class="status-label">Protection</span>
-          <span class="status-value" id="protectionStatus">Checking...</span>
+        <footer class="main-footer">
+          <a href="#" id="exportDSR">Export my data (DSR)</a>
+        </footer>
+      </section>
+
+      <!-- ===== Log ===== -->
+      <section class="tab-panel" id="tab-log">
+        <header class="main-header">
+          <h1>Activity log</h1>
+        </header>
+        <div class="main-content">
+          <div class="log-toolbar">
+            <select id="auditFilter">
+              <option value="all">All entries</option>
+              <option value="success">Successful</option>
+              <option value="failed">Failed</option>
+            </select>
+            <input type="text" id="auditSearch" placeholder="Search site or CMP...">
+          </div>
+          <div class="log-list" id="auditList"><div class="empty-state">Loading...</div></div>
+          <div class="pagination">
+            <button class="btn btn-ghost btn-sm" id="auditPrev" disabled>Prev</button>
+            <span id="auditPageInfo">Page 1</span>
+            <button class="btn btn-ghost btn-sm" id="auditNext">Next</button>
+          </div>
         </div>
-        <div class="status-item">
-          <span class="status-label">CMPs Blocked</span>
-          <span class="status-value" id="cmpsBlocked">0</span>
+        <footer class="main-footer">
+          <a href="#" id="clearAudit">Clear log</a>
+        </footer>
+      </section>
+
+      <!-- ===== Settings ===== -->
+      <section class="tab-panel" id="tab-settings">
+        <header class="main-header">
+          <h1>Settings</h1>
+        </header>
+        <div class="main-content">
+          <div class="section-label">Preset</div>
+          <div class="preset-list">
+            <button class="preset-btn" data-preset="essential">
+              <span class="preset-name">Essential only</span>
+              <span class="preset-desc">Necessary cookies only. Default.</span>
+            </button>
+            <button class="preset-btn" data-preset="balanced">
+              <span class="preset-name">Balanced</span>
+              <span class="preset-desc">+ preferences allowed.</span>
+            </button>
+            <button class="preset-btn" data-preset="allowAll">
+              <span class="preset-name">Allow all</span>
+              <span class="preset-desc">Accept everything.</span>
+            </button>
+            <button class="preset-btn" data-preset="custom">
+              <span class="preset-name">Custom</span>
+              <span class="preset-desc">Set below, per category.</span>
+            </button>
+          </div>
+
+          <div class="custom-toggles" id="customToggles">
+            <div class="section-label">Categories</div>
+            <div class="toggle-row toggle-locked" data-category="necessary">
+              <span class="toggle-info">
+                <span class="toggle-name">Necessary</span>
+                <span class="toggle-sub">Required for sites to function &mdash; can't be disabled</span>
+              </span>
+              <label class="switch switch-disabled">
+                <input type="checkbox" checked disabled>
+                <span class="switch-slider"></span>
+              </label>
+              <span class="toggle-state" data-state-for="necessary">On</span>
+            </div>
+            <div class="toggle-row" data-category="preferences">
+              <span class="toggle-info"><span class="toggle-name">Preferences</span></span>
+              <label class="switch"><input type="checkbox" data-cat="preferences"><span class="switch-slider"></span></label>
+              <span class="toggle-state" data-state-for="preferences">Off</span>
+            </div>
+            <div class="toggle-row" data-category="analytics">
+              <span class="toggle-info"><span class="toggle-name">Analytics</span></span>
+              <label class="switch"><input type="checkbox" data-cat="analytics"><span class="switch-slider"></span></label>
+              <span class="toggle-state" data-state-for="analytics">Off</span>
+            </div>
+            <div class="toggle-row" data-category="marketing">
+              <span class="toggle-info"><span class="toggle-name">Marketing</span></span>
+              <label class="switch"><input type="checkbox" data-cat="marketing"><span class="switch-slider"></span></label>
+              <span class="toggle-state" data-state-for="marketing">Off</span>
+            </div>
+            <div class="toggle-row" data-category="social">
+              <span class="toggle-info"><span class="toggle-name">Social</span></span>
+              <label class="switch"><input type="checkbox" data-cat="social"><span class="switch-slider"></span></label>
+              <span class="toggle-state" data-state-for="social">Off</span>
+            </div>
+            <div class="toggle-row" data-category="unclassified">
+              <span class="toggle-info"><span class="toggle-name">Unclassified</span></span>
+              <label class="switch"><input type="checkbox" data-cat="unclassified"><span class="switch-slider"></span></label>
+              <span class="toggle-state" data-state-for="unclassified">Off</span>
+            </div>
+          </div>
+
+          <div class="section-label">Notifications</div>
+          <div class="toggle-row" id="toastSettingRow">
+            <span class="toggle-info">
+              <span class="toggle-name">Confirmation toast</span>
+              <span class="toggle-sub">Briefly confirms when a cookie banner was handled</span>
+            </span>
+            <label class="switch"><input type="checkbox" id="toastToggle" checked><span class="switch-slider"></span></label>
+            <span class="toggle-state" id="toastToggleState">On</span>
+          </div>
+
+          <details class="advanced">
+            <summary>Advanced settings</summary>
+            <div class="advanced-body">
+
+              <div class="adv-block">
+                <div class="adv-block-title">Site overrides</div>
+                <div class="sites-list" id="sitesList"><div class="empty-state">No overrides. Global policy applies everywhere.</div></div>
+                <button class="btn btn-secondary btn-sm" id="btnAddSiteOverride">Add site override</button>
+              </div>
+
+              <div class="adv-block">
+                <div class="adv-block-title">Policy (YAML)</div>
+                <textarea id="policyEditor" class="yaml-editor" spellcheck="false"></textarea>
+                <div class="adv-actions">
+                  <button class="btn btn-secondary btn-sm" id="btnValidatePolicy">Validate</button>
+                  <button class="btn btn-secondary btn-sm" id="btnResetPolicy">Reset</button>
+                  <button class="btn btn-primary btn-sm" id="btnSavePolicy">Save</button>
+                </div>
+                <div class="validation-results" id="validationResults"></div>
+              </div>
+
+              <div class="adv-block">
+                <div class="adv-block-title">Statistics</div>
+                <div class="stat-row"><span>CMPs handled</span><span id="statCmps">0</span></div>
+                <div class="stat-row"><span>Sites seen</span><span id="statSites">0</span></div>
+                <div class="stat-row"><span>Audit entries</span><span id="statEntries">0</span></div>
+              </div>
+
+              <div class="adv-block">
+                <div class="adv-block-title">CMP adapters</div>
+                <p class="adv-note">Built-in: Consent-O-Matic — inherits 200+ CMP rules (OneTrust, Cookiebot, Sourcepoint, Didomi, TrustArc, Usercentrics and more).</p>
+              </div>
+
+            </div>
+          </details>
         </div>
-      </div>
-      
-      <div class="decisions-section">
-        <h3>Consent Decisions</h3>
-        <div class="decisions-grid" id="decisionsGrid">
-          <!-- Populated by JS -->
+      </section>
+
+      <!-- ===== About ===== -->
+      <section class="tab-panel" id="tab-about">
+        <header class="main-header">
+          <h1>About</h1>
+        </header>
+        <div class="main-content">
+          <p class="version" id="aboutVersion">Version —</p>
+
+          <div class="about-section">
+            <h3>What is this?</h3>
+            <p>A Manifest V3 browser extension that goes beyond cookie banner clicking to provide a comprehensive, extensible data permission layer.</p>
+          </div>
+
+          <div class="about-section">
+            <h3>Built on</h3>
+            <ul>
+              <li><strong>Consent-O-Matic</strong> (MIT) — CMP detection &amp; rule engine</li>
+              <li><strong>Chrome Declarative Net Request</strong> — GPC header injection</li>
+              <li><strong>Manifest V3</strong> — modern extension architecture</li>
+            </ul>
+          </div>
+
+          <div class="about-section">
+            <h3>Legal</h3>
+            <p>Crumb Control is released under the MIT licence and is provided as-is, with no warranty.</p>
+            <p>It stores your settings on your own device and sends no data anywhere. It is a convenience tool, not legal advice, and it does not guarantee that any given website honours the choices it submits.</p>
+          </div>
+
+          <div class="about-section">
+            <h3>Links</h3>
+            <div class="links">
+              <a href="https://github.com/JuicyLies/crumb-control" target="_blank" rel="noopener">GitHub repository</a>
+              <a href="https://github.com/JuicyLies/crumb-control/issues" target="_blank" rel="noopener">Report issues</a>
+              <a href="https://github.com/cavi-au/Consent-O-Matic" target="_blank" rel="noopener">Consent-O-Matic (upstream)</a>
+            </div>
+          </div>
+
+          <div class="about-section">
+            <h3>License</h3>
+            <p>MIT License — see <a href="https://github.com/JuicyLies/crumb-control/blob/main/LICENSE" target="_blank" rel="noopener">LICENSE</a></p>
+          </div>
         </div>
-      </div>
-      
-      <div class="actions-section">
-        <button class="btn btn-primary" id="openOptions">Open Dashboard</button>
-        <button class="btn btn-secondary" id="toggleSite">Disable on This Site</button>
-        <button class="btn btn-secondary" id="reportIssue">Report Broken CMP</button>
-      </div>
-      
-      <div class="footer">
-        <a href="#" id="viewAudit">View Audit Log</a>
-        <a href="#" id="exportDSR">Export My Data (DSR)</a>
-      </div>
+      </section>
     </div>
   </div>
+
+  <!-- Site override modal -->
+  <dialog id="siteOverrideModal" class="modal">
+    <form method="dialog">
+      <h3 id="modalTitle">Add site override</h3>
+      <div class="form-group">
+        <label>Site (hostname)</label>
+        <input type="text" id="modalSite" placeholder="example.com" required>
+      </div>
+      <div class="form-group">
+        <label>Category</label>
+        <select id="modalCategory" required>
+          <option value="necessary">Necessary</option>
+          <option value="preferences">Preferences</option>
+          <option value="analytics">Analytics</option>
+          <option value="marketing">Marketing</option>
+          <option value="social">Social</option>
+          <option value="unclassified">Other/Unclassified</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Decision</label>
+        <select id="modalDecision" required>
+          <option value="allow">Allow</option>
+          <option value="reject">Reject</option>
+          <option value="ask">Ask (default)</option>
+        </select>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-secondary btn-sm" value="cancel">Cancel</button>
+        <button class="btn btn-primary btn-sm" id="modalSave" value="default">Save</button>
+      </div>
+    </form>
+  </dialog>
+
   <script type="module" src="popup.js"></script>
 </body>
 </html>

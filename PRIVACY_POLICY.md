@@ -1,4 +1,4 @@
-# Privacy Policy — Universal Data Permission Layer
+# Privacy Policy — Crumb Control
 
 **Effective date:** 2025-08-25  
 **Version:** 0.1  
@@ -8,7 +8,7 @@
 
 ## Summary
 
-**Universal Data Permission Layer collects no personal data.** No analytics, no telemetry, no vendor backend, no user accounts. All data stays in your browser's local storage unless you explicitly enable optional encrypted sync.
+**Crumb Control collects no personal data.** No analytics, no telemetry, no vendor backend, no user accounts. All data stays in your browser's local storage unless you explicitly enable optional encrypted sync.
 
 ---
 
@@ -100,7 +100,7 @@ Material changes will be noted in the extension's changelog and on the GitHub re
 
 ## Contact
 
-- **GitHub Issues:** https://github.com/JuicyLies/UniversalDataPermissionLayer/issues
+- **GitHub Issues:** https://github.com/JuicyLies/crumb-control/issues
 - **Security:** security@juicylies.dev (or GitHub Security Advisory)
 - **Maintainer:** Daniel Milanesi
 
@@ -108,10 +108,16 @@ Material changes will be noted in the extension's changelog and on the GitHub re
 
 ## Legal Basis
 
-> 🚧 **Coming soon.** The lawful-basis analysis for each kind of processing is
-> being prepared with proper legal review and will be published here before
-> public release.
+Crumb Control does not collect, transmit or process personal data on our behalf,
+so there is no controller-side lawful basis to declare. Your preferences and
+activity log are written to your browser's own local storage, stay on your
+device, and are never sent to us or to any third party — we operate no server
+and receive nothing.
+
+Because no personal data reaches us, we are not a data controller in respect of
+your use of this extension. This document describes the extension's actual
+behaviour and is not legal advice.
 
 ---
 
-*This privacy policy covers the Universal Data Permission Layer browser extension only. It does not cover third-party websites you visit, nor the Consent-O-Matic upstream project (which has its own repository and governance).*
+*This privacy policy covers the Crumb Control browser extension only. It does not cover third-party websites you visit, nor the Consent-O-Matic upstream project (which has its own repository and governance).*

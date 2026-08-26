@@ -1,10 +1,10 @@
 {
-  "name": "Universal Data Permission Layer",
-  "description": "Comprehensive cross-platform data permission layer: cookie consent auto-handling + GPC header + Topics API opt-out + policy engine + encrypted sync + audit dashboard",
-  "version": "0.1.0",
+  "name": "Crumb Control",
+  "description": "Automatic cookie consent handling, GPC signal, and a local privacy policy engine — no accounts, no cloud, no tracking.",
+  "version": "0.3.0",
   "manifest_version": 3,
   "author": "Daniel Milanesi",
-  "homepage_url": "https://github.com/JuicyLies/UniversalDataPermissionLayer",
+  "homepage_url": "https://github.com/JuicyLies/crumb-control",
   "permissions": [
     "storage",
     "activeTab",
@@ -37,14 +37,18 @@
     }
   ],
   "action": {
-    "default_title": "Universal Data Permission Layer",
-    "default_popup": "popup.html"
-  },
-  "options_ui": {
-    "page": "options.html",
-    "open_in_tab": true
+    "default_title": "Crumb Control",
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "assets/icons/icon_16.png",
+      "32": "assets/icons/icon_32.png",
+      "48": "assets/icons/icon_48.png",
+      "128": "assets/icons/icon_128.png"
+    }
   },
   "icons": {
+    "16": "assets/icons/icon_16.png",
+    "32": "assets/icons/icon_32.png",
     "48": "assets/icons/icon_48.png",
     "96": "assets/icons/icon_96.png",
     "128": "assets/icons/icon_128.png"
