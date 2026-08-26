@@ -16,7 +16,7 @@ The freshly-built zips are sitting at:
 Copy that to your desktop, unzip it.
 
 ### If you're anywhere else:
-1. Go to https://github.com/JuicyLies/UniversalDataPermissionLayer
+1. Go to https://github.com/JuicyLies/crumb-control
 2. Green "Code" button → Download ZIP → unzip
 3. Or wait until we tag a release and download `udp-chrome-v0.1.0.zip` from the Releases page
 
@@ -25,7 +25,7 @@ Copy that to your desktop, unzip it.
 2. Top right — flip on **Developer mode**
 3. Top left — click **Load unpacked**
 4. Pick the **unzipped folder** (the one containing `manifest.json` — for the built version that's `dist/chrome/`, for the release zip that's just the unzipped folder itself)
-5. You should see **"Universal Data Permission Layer"** appear with its icon
+5. You should see **"Crumb Control"** appear with its icon
 
 **If it fails to load:** the error will show inline in the extensions page — screenshot it or copy the text and we'll debug.
 
@@ -164,7 +164,7 @@ Note: temporary add-ons in Firefox disappear when you restart the browser. For p
 
 ## When to file a bug
 
-Open an issue at https://github.com/JuicyLies/UniversalDataPermissionLayer/issues if:
+Open an issue at https://github.com/JuicyLies/crumb-control/issues if:
 
 - Extension fails to load at all
 - Dashboard tab is broken / doesn't render

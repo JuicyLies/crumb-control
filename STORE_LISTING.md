@@ -1,4 +1,4 @@
-# Universal Data Permission Layer — Chrome Web Store Listing
+# Crumb Control — Chrome Web Store Listing
 
 ## Store Page Copy
 
@@ -11,7 +11,7 @@ Set your cookie/data preferences **once**. Extension applies them automatically 
 
 **The problem:** Every site forces you through a consent banner. "Accept All" is one click; refusing takes 5+. Your preferences don't carry over to the next site, or the next device. It's consent fatigue by design.
 
-**The fix:** Universal Data Permission Layer lets you define a **portable, machine-readable policy** — then applies it everywhere, automatically.
+**The fix:** Crumb Control lets you define a **portable, machine-readable policy** — then applies it everywhere, automatically.
 
 ```yaml
 # Your policy (editable in the dashboard)
@@ -98,7 +98,7 @@ This tool automates **your own responses** to consent dialogs using the controls
 
 ## Release Notes (v0.1.0)
 
-**Initial release.** A Manifest V3 browser extension implementing a universal data permission layer:
+**Initial release.** A Manifest V3 browser extension that handles cookie consent for you automatically:
 
 - Policy engine (YAML/JSON, global + per-site + first/third-party context)
 - GPC header injection via declarativeNetRequest

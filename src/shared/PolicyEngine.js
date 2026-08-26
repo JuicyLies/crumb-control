@@ -1,4 +1,4 @@
-// PolicyEngine.js - Core policy engine for Universal Data Permission Layer
+// PolicyEngine.js - Core policy engine for Crumb Control
 // Handles YAML/JSON policy parsing, site-scoped overrides, and consent decision making
 
 export const CONSENT_CATEGORIES = {

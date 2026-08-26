@@ -1,4 +1,4 @@
-# Privacy Policy — Universal Data Permission Layer
+# Privacy Policy — Crumb Control
 
 **Effective date:** 2025-08-25  
 **Version:** 0.1  
@@ -8,7 +8,7 @@
 
 ## Summary
 
-**Universal Data Permission Layer collects no personal data.** No analytics, no telemetry, no vendor backend, no user accounts. All data stays in your browser's local storage unless you explicitly enable optional encrypted sync.
+**Crumb Control collects no personal data.** No analytics, no telemetry, no vendor backend, no user accounts. All data stays in your browser's local storage unless you explicitly enable optional encrypted sync.
 
 ---
 
@@ -100,7 +100,7 @@ Material changes will be noted in the extension's changelog and on the GitHub re
 
 ## Contact
 
-- **GitHub Issues:** https://github.com/JuicyLies/UniversalDataPermissionLayer/issues
+- **GitHub Issues:** https://github.com/JuicyLies/crumb-control/issues
 - **Security:** security@juicylies.dev (or GitHub Security Advisory)
 - **Maintainer:** Daniel Milanesi
 
@@ -114,4 +114,4 @@ Material changes will be noted in the extension's changelog and on the GitHub re
 
 ---
 
-*This privacy policy covers the Universal Data Permission Layer browser extension only. It does not cover third-party websites you visit, nor the Consent-O-Matic upstream project (which has its own repository and governance).*
+*This privacy policy covers the Crumb Control browser extension only. It does not cover third-party websites you visit, nor the Consent-O-Matic upstream project (which has its own repository and governance).*

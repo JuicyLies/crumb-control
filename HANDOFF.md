@@ -99,7 +99,7 @@ Daniel: *"We don't need a login system for accounts... Simplify it. Just have an
 
 ### 4. New name + logo
 
-Current name **"Universal Data Permission Layer"** is rejected — too long, too corporate, unmemorable.
+Current name **"Crumb Control"** is rejected — too long, too corporate, unmemorable.
 
 **Deliver 4 name candidates.** Criteria:
 - Short (1–2 words), memorable, pronounceable
@@ -120,7 +120,7 @@ Present all 8 (4 names, 4 logos) to Daniel for selection. Do not pick unilateral
 
 ## Project Facts
 
-**Repo:** https://github.com/JuicyLies/UniversalDataPermissionLayer (private)
+**Repo:** https://github.com/JuicyLies/crumb-control (private)
 **Local path:** `/mnt/user/data/Shared/VibeCode/UniversalDataPermissionLayer/`
 **Current version:** v0.2.1
 

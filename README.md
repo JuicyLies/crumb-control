@@ -1,4 +1,4 @@
-# Universal Data Permission Layer
+# Crumb Control
 
 > **Stop clicking cookie banners.** Tell your browser what you want once, and it handles every website for you.
 
@@ -61,7 +61,7 @@ You have three ways, from easiest to most involved.
 Once the store review is done, you'll click **Add to Chrome** and that's it. Watch this space.
 
 ### Option 2: Download and drop in
-1. Grab the latest release from the [Releases page](https://github.com/JuicyLies/UniversalDataPermissionLayer/releases)
+1. Grab the latest release from the [Releases page](https://github.com/JuicyLies/crumb-control/releases)
 2. Download `udp-chrome-v0.1.0.zip` (or `udp-firefox-v0.1.0.zip`)
 3. **Unzip it** somewhere
 4. In Chrome: open `chrome://extensions`, flip the **Developer mode** switch (top right), click **Load unpacked**, pick the unzipped folder
@@ -71,8 +71,8 @@ Once the store review is done, you'll click **Add to Chrome** and that's it. Wat
 For developers who want to hack on it:
 
 ```bash
-git clone --recurse-submodules https://github.com/JuicyLies/UniversalDataPermissionLayer
-cd UniversalDataPermissionLayer
+git clone --recurse-submodules https://github.com/JuicyLies/crumb-control
+cd crumb-control
 npm install
 npm run build:chrome   # or build:firefox
 ```
@@ -165,7 +165,7 @@ Important, so we're clear:
 
 ## Help / bug reports
 
-- **Something not working?** Open an [issue on GitHub](https://github.com/JuicyLies/UniversalDataPermissionLayer/issues) — say which website and what happened
+- **Something not working?** Open an [issue on GitHub](https://github.com/JuicyLies/crumb-control/issues) — say which website and what happened
 - **Cookie banner not being handled?** That means it's a new one. Same link, tell us the site.
 - **Want to help?** See [CONTRIBUTING.md](CONTRIBUTING.md)
 - **Security bug?** See [SECURITY.md](SECURITY.md)

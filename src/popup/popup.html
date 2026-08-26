@@ -2,17 +2,14 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Universal Data Permission Layer</title>
+  <title>Crumb Control</title>
   <link rel="stylesheet" href="popup.css">
 </head>
 <body>
   <div class="app">
     <nav class="sidebar">
       <div class="sidebar-logo">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <rect x="2" y="2" width="20" height="20" rx="4"/>
-          <path d="M9 12l2 2 4-4"/>
-        </svg>
+        <img src="../assets/icons/icon_48.png" width="24" height="24" alt="Crumb Control" />
       </div>
       <button class="nav-icon-btn active" data-tab="home" title="Status">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -96,50 +93,70 @@
           <div class="preset-list">
             <button class="preset-btn" data-preset="essential">
               <span class="preset-name">Essential only</span>
-              <span class="preset-desc">Only strictly necessary cookies. Everything else is rejected. Default.</span>
+              <span class="preset-desc">Necessary cookies only. Default.</span>
             </button>
             <button class="preset-btn" data-preset="balanced">
               <span class="preset-name">Balanced</span>
-              <span class="preset-desc">Necessary + preferences allowed. Analytics, marketing and social rejected.</span>
+              <span class="preset-desc">+ preferences allowed.</span>
+            </button>
+            <button class="preset-btn" data-preset="allowAll">
+              <span class="preset-name">Allow all</span>
+              <span class="preset-desc">Accept everything.</span>
             </button>
             <button class="preset-btn" data-preset="custom">
               <span class="preset-name">Custom</span>
-              <span class="preset-desc">Choose a decision for each category yourself.</span>
+              <span class="preset-desc">Set below, per category.</span>
             </button>
           </div>
 
-          <div class="custom-toggles" id="customToggles" hidden>
+          <div class="custom-toggles" id="customToggles">
             <div class="section-label">Categories</div>
-            <div class="toggle-row" data-category="necessary">
+            <div class="toggle-row toggle-locked" data-category="necessary">
               <span class="toggle-info">
                 <span class="toggle-name">Necessary</span>
-                <span class="toggle-sub">Always allowed</span>
+                <span class="toggle-sub">Required for sites to function &mdash; can't be disabled</span>
               </span>
               <label class="switch switch-disabled">
                 <input type="checkbox" checked disabled>
                 <span class="switch-slider"></span>
               </label>
+              <span class="toggle-state" data-state-for="necessary">On</span>
             </div>
             <div class="toggle-row" data-category="preferences">
               <span class="toggle-info"><span class="toggle-name">Preferences</span></span>
               <label class="switch"><input type="checkbox" data-cat="preferences"><span class="switch-slider"></span></label>
+              <span class="toggle-state" data-state-for="preferences">Off</span>
             </div>
             <div class="toggle-row" data-category="analytics">
               <span class="toggle-info"><span class="toggle-name">Analytics</span></span>
               <label class="switch"><input type="checkbox" data-cat="analytics"><span class="switch-slider"></span></label>
+              <span class="toggle-state" data-state-for="analytics">Off</span>
             </div>
             <div class="toggle-row" data-category="marketing">
               <span class="toggle-info"><span class="toggle-name">Marketing</span></span>
               <label class="switch"><input type="checkbox" data-cat="marketing"><span class="switch-slider"></span></label>
+              <span class="toggle-state" data-state-for="marketing">Off</span>
             </div>
             <div class="toggle-row" data-category="social">
               <span class="toggle-info"><span class="toggle-name">Social</span></span>
               <label class="switch"><input type="checkbox" data-cat="social"><span class="switch-slider"></span></label>
+              <span class="toggle-state" data-state-for="social">Off</span>
             </div>
             <div class="toggle-row" data-category="unclassified">
               <span class="toggle-info"><span class="toggle-name">Unclassified</span></span>
               <label class="switch"><input type="checkbox" data-cat="unclassified"><span class="switch-slider"></span></label>
+              <span class="toggle-state" data-state-for="unclassified">Off</span>
             </div>
+          </div>
+
+          <div class="section-label">Notifications</div>
+          <div class="toggle-row" id="toastSettingRow">
+            <span class="toggle-info">
+              <span class="toggle-name">Confirmation toast</span>
+              <span class="toggle-sub">Briefly confirms when a cookie banner was handled</span>
+            </span>
+            <label class="switch"><input type="checkbox" id="toastToggle" checked><span class="switch-slider"></span></label>
+            <span class="toggle-state" id="toastToggleState">On</span>
           </div>
 
           <details class="advanced">
@@ -210,15 +227,15 @@
           <div class="about-section">
             <h3>Links</h3>
             <div class="links">
-              <a href="https://github.com/JuicyLies/UniversalDataPermissionLayer" target="_blank" rel="noopener">GitHub repository</a>
-              <a href="https://github.com/JuicyLies/UniversalDataPermissionLayer/issues" target="_blank" rel="noopener">Report issues</a>
+              <a href="https://github.com/JuicyLies/crumb-control" target="_blank" rel="noopener">GitHub repository</a>
+              <a href="https://github.com/JuicyLies/crumb-control/issues" target="_blank" rel="noopener">Report issues</a>
               <a href="https://github.com/cavi-au/Consent-O-Matic" target="_blank" rel="noopener">Consent-O-Matic (upstream)</a>
             </div>
           </div>
 
           <div class="about-section">
             <h3>License</h3>
-            <p>MIT License — see <a href="https://github.com/JuicyLies/UniversalDataPermissionLayer/blob/main/LICENSE" target="_blank" rel="noopener">LICENSE</a></p>
+            <p>MIT License — see <a href="https://github.com/JuicyLies/crumb-control/blob/main/LICENSE" target="_blank" rel="noopener">LICENSE</a></p>
           </div>
         </div>
       </section>

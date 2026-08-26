@@ -6,3 +6,6 @@ dist/
 .cache/
 *.zip
 Consent-O-Matic/BundledRules.json
+
+# Source logo artwork — kept local, not published
+logos/

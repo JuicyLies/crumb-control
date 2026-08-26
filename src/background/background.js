@@ -1,4 +1,4 @@
-// background.js - Service Worker for Universal Data Permission Layer
+// background.js - Service Worker for Crumb Control
 
 import { PolicyEngine } from '../shared/PolicyEngine.js';
 import GDPRConfig from '../content/GDPRConfig.js';
@@ -19,7 +19,8 @@ const STATUS = { INIT: 0, NOTHING: 1, SEARCHING: 2, ERROR: 3, HANDLED: 4 };
 // Settings presets — see HANDOFF.md section 3
 const PRESETS = {
   essential: { necessary: 'allow', preferences: 'reject', analytics: 'reject', marketing: 'reject', social: 'reject', unclassified: 'reject' },
-  balanced: { necessary: 'allow', preferences: 'allow', analytics: 'reject', marketing: 'reject', social: 'reject', unclassified: 'reject' }
+  balanced: { necessary: 'allow', preferences: 'allow', analytics: 'reject', marketing: 'reject', social: 'reject', unclassified: 'reject' },
+  allowAll: { necessary: 'allow', preferences: 'allow', analytics: 'allow', marketing: 'allow', social: 'allow', unclassified: 'allow' }
 };
 
 // Ensure fresh installs get an explicit "Essential only" default written to storage,

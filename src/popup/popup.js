@@ -1,4 +1,4 @@
-// popup.js - Compact panel UI for Universal Data Permission Layer
+// popup.js - Compact panel UI for Crumb Control
 
 import { PolicyEngine } from '../shared/PolicyEngine.js';
 
@@ -50,6 +50,7 @@ class Popup {
     await this.loadSiteOverrides();
     await this.loadStatistics();
     await this.loadDisabledState();
+    await this.loadToastSetting();
 
     document.getElementById('aboutVersion').textContent = `Version ${chrome.runtime.getManifest().version}`;
   }
@@ -82,7 +83,7 @@ class Popup {
     });
 
     document.getElementById('reportIssue').addEventListener('click', () => {
-      const url = `https://github.com/JuicyLies/UniversalDataPermissionLayer/issues/new?template=broken-cmp.yml&title=[CMP]%20${encodeURIComponent(this.hostname)}`;
+      const url = `https://github.com/JuicyLies/crumb-control/issues/new?template=broken-cmp.yml&title=[CMP]%20${encodeURIComponent(this.hostname)}`;
       chrome.tabs.create({ url });
       window.close();
     });
@@ -256,6 +257,27 @@ class Popup {
       input.addEventListener('change', () => this.onCustomToggleChange());
     });
 
+    // Clicking anywhere on a (non-locked) row flips its switch too, not just the tiny control.
+    document.querySelectorAll('.toggle-row[data-category]').forEach(row => {
+      row.addEventListener('click', (e) => {
+        if (row.classList.contains('toggle-locked')) return;
+        if (e.target.closest('.switch')) return; // avoid double-toggle when the switch itself was clicked
+        const input = row.querySelector('input[data-cat]');
+        if (input) {
+          input.checked = !input.checked;
+          input.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+      });
+    });
+
+    const toastToggle = document.getElementById('toastToggle');
+    toastToggle.addEventListener('change', () => this.onToastToggleChange());
+    document.getElementById('toastSettingRow').addEventListener('click', (e) => {
+      if (e.target.closest('.switch')) return;
+      toastToggle.checked = !toastToggle.checked;
+      toastToggle.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+
     document.getElementById('btnAddSiteOverride').addEventListener('click', () => this.openSiteOverrideModal());
 
     document.getElementById('btnValidatePolicy').addEventListener('click', () => this.validatePolicy());
@@ -281,40 +303,71 @@ class Popup {
     document.querySelectorAll('.preset-btn').forEach(btn => {
       btn.classList.toggle('active', btn.dataset.preset === this.currentPreset);
     });
+    this.renderToggles();
+  }
 
-    const customToggles = document.getElementById('customToggles');
-    if (this.currentPreset === 'custom') {
-      customToggles.hidden = false;
-      const decisions = this.policyEngine.policy.global;
-      document.querySelectorAll('#customToggles input[data-cat]').forEach(input => {
-        input.checked = decisions[input.dataset.cat] === 'allow';
-      });
-    } else {
-      customToggles.hidden = true;
-    }
+  renderToggles() {
+    const decisions = this.policyEngine.policy.global;
+    document.querySelectorAll('#customToggles input[data-cat]').forEach(input => {
+      input.checked = decisions[input.dataset.cat] === 'allow';
+      this.updateToggleStateLabel(input.dataset.cat, input.checked);
+    });
+    this.updateToggleStateLabel('necessary', true);
+  }
+
+  updateToggleStateLabel(category, isOn) {
+    const label = document.querySelector(`.toggle-state[data-state-for="${category}"]`);
+    if (!label) return;
+    label.textContent = isOn ? 'On' : 'Off';
+    label.classList.toggle('on', isOn);
   }
 
   async selectPreset(preset) {
     this.currentPreset = preset;
-    this.renderPresetSelection();
 
     if (preset === 'custom') {
-      // Reflect current toggle state into policy (don't overwrite until user flips one)
+      // "Custom" just labels whatever the toggles already say — no decisions change.
+      this.renderPresetSelection();
+      await this.persistPolicy('custom');
       return;
     }
 
     await this.sendMessage({ type: 'SET_PRESET', preset });
     await this.loadPolicy();
+    this.renderPresetSelection();
     await this.loadDecisions();
   }
 
   async onCustomToggleChange() {
     document.querySelectorAll('#customToggles input[data-cat]').forEach(input => {
       this.policyEngine.setGlobalDefault(input.dataset.cat, input.checked ? 'allow' : 'reject');
+      this.updateToggleStateLabel(input.dataset.cat, input.checked);
+    });
+    // Any manual flip means the active preset no longer matches Essential/Balanced/Allow all.
+    this.currentPreset = 'custom';
+    document.querySelectorAll('.preset-btn').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.preset === 'custom');
     });
     await this.persistPolicy('custom');
     this.updatePolicyEditor();
     await this.loadDecisions();
+  }
+
+  // ---- Notifications: confirmation toast ----
+
+  async loadToastSetting() {
+    const { udp_toast_enabled } = await chrome.storage.sync.get({ udp_toast_enabled: true });
+    const toastToggle = document.getElementById('toastToggle');
+    toastToggle.checked = udp_toast_enabled !== false;
+    document.getElementById('toastToggleState').textContent = toastToggle.checked ? 'On' : 'Off';
+    document.getElementById('toastToggleState').classList.toggle('on', toastToggle.checked);
+  }
+
+  async onToastToggleChange() {
+    const toastToggle = document.getElementById('toastToggle');
+    await chrome.storage.sync.set({ udp_toast_enabled: toastToggle.checked });
+    document.getElementById('toastToggleState').textContent = toastToggle.checked ? 'On' : 'Off';
+    document.getElementById('toastToggleState').classList.toggle('on', toastToggle.checked);
   }
 
   async persistPolicy(preset) {
