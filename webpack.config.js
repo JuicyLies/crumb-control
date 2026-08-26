@@ -35,11 +35,9 @@ module.exports = (env, argv) => {
     },
     // HTML files (referenced by manifest)
     { from: 'src/popup/popup.html', to: 'popup.html' },
-    { from: 'src/options/options.html', to: 'options.html' },
     // CSS files (referenced by manifest)
     { from: 'src/content/content.css', to: 'content.css' },
     { from: 'src/popup/popup.css', to: 'popup.css' },
-    { from: 'src/options/options.css', to: 'options.css' },
 
     // Our rules
     { from: 'src/rules/', to: 'rules/', noErrorOnMissing: true },
@@ -85,7 +83,6 @@ module.exports = (env, argv) => {
       background: './src/background/background.js',
       content: './src/content/content.js',
       popup: './src/popup/popup.js',
-      options: './src/options/options.js',
     },
     output: {
       path: distDir,
@@ -164,7 +161,6 @@ module.exports = (env, argv) => {
         '@background': path.resolve(__dirname, 'src/background'),
         '@content': path.resolve(__dirname, 'src/content'),
         '@popup': path.resolve(__dirname, 'src/popup'),
-        '@options': path.resolve(__dirname, 'src/options'),
       }
     },
     devtool: isProduction ? false : 'inline-source-map',

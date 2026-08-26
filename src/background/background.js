@@ -7,13 +7,38 @@ const STORAGE_KEYS = {
   POLICY: 'udp_policy',
   AUDIT_LOG: 'udp_audit_log',
   SYNC_CONFIG: 'udp_sync_config',
-  STATISTICS: 'udp_statistics'
+  STATISTICS: 'udp_statistics',
+  PRESET: 'udp_preset'
 };
 
 const AUDIT_LOG_MAX_ENTRIES = 10000;
 let tabStatusMap = new Map();
 
 const STATUS = { INIT: 0, NOTHING: 1, SEARCHING: 2, ERROR: 3, HANDLED: 4 };
+
+// Settings presets — see HANDOFF.md section 3
+const PRESETS = {
+  essential: { necessary: 'allow', preferences: 'reject', analytics: 'reject', marketing: 'reject', social: 'reject', unclassified: 'reject' },
+  balanced: { necessary: 'allow', preferences: 'allow', analytics: 'reject', marketing: 'reject', social: 'reject', unclassified: 'reject' }
+};
+
+// Ensure fresh installs get an explicit "Essential only" default written to storage,
+// rather than relying on PolicyEngine's in-memory default.
+chrome.runtime.onInstalled.addListener((details) => {
+  if (details.reason !== 'install') return;
+  (async () => {
+    const existing = await chrome.storage.sync.get({ [STORAGE_KEYS.POLICY]: null, [STORAGE_KEYS.PRESET]: null });
+    if (existing[STORAGE_KEYS.POLICY] || existing[STORAGE_KEYS.PRESET]) return;
+    const engine = new PolicyEngine();
+    for (const [cat, dec] of Object.entries(PRESETS.essential)) {
+      engine.setGlobalDefault(cat, dec);
+    }
+    await chrome.storage.sync.set({
+      [STORAGE_KEYS.POLICY]: engine.serialize(),
+      [STORAGE_KEYS.PRESET]: 'essential'
+    });
+  })();
+});
 
 class BackgroundService {
   constructor() {
@@ -46,6 +71,17 @@ class BackgroundService {
 
   async savePolicy() {
     await chrome.storage.sync.set({ [STORAGE_KEYS.POLICY]: this.policyEngine.serialize() });
+  }
+
+  async applyPreset(preset) {
+    if (PRESETS[preset]) {
+      for (const [cat, dec] of Object.entries(PRESETS[preset])) {
+        this.policyEngine.setGlobalDefault(cat, dec);
+      }
+      await this.savePolicy();
+      await this.setupGPC();
+    }
+    await chrome.storage.sync.set({ [STORAGE_KEYS.PRESET]: preset });
   }
 
   async setupGPC() {
@@ -155,6 +191,18 @@ class BackgroundService {
         this.policyEngine.load(message.policy);
         await this.savePolicy();
         await this.setupGPC();
+        if (message.preset) {
+          await chrome.storage.sync.set({ [STORAGE_KEYS.PRESET]: message.preset });
+        }
+        return { success: true };
+
+      case 'GET_PRESET': {
+        const result = await chrome.storage.sync.get({ [STORAGE_KEYS.PRESET]: 'essential' });
+        return { preset: result[STORAGE_KEYS.PRESET] };
+      }
+
+      case 'SET_PRESET':
+        await this.applyPreset(message.preset);
         return { success: true };
 
       case 'GET_DECISIONS':
