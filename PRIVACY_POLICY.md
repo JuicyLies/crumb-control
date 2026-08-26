@@ -108,9 +108,15 @@ Material changes will be noted in the extension's changelog and on the GitHub re
 
 ## Legal Basis
 
-> 🚧 **Coming soon.** The lawful-basis analysis for each kind of processing is
-> being prepared with proper legal review and will be published here before
-> public release.
+Crumb Control does not collect, transmit or process personal data on our behalf,
+so there is no controller-side lawful basis to declare. Your preferences and
+activity log are written to your browser's own local storage, stay on your
+device, and are never sent to us or to any third party — we operate no server
+and receive nothing.
+
+Because no personal data reaches us, we are not a data controller in respect of
+your use of this extension. This document describes the extension's actual
+behaviour and is not legal advice.
 
 ---
 

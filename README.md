@@ -85,40 +85,42 @@ Then load `dist/chrome/` (or `dist/firefox/`) as an unpacked extension.
 
 ## How to actually use it
 
-Once installed, click the add-on's icon in your browser toolbar:
-
-- **The popup** shows what's happening on the current site — which cookies are being blocked, whether it recognised the banner
-- **The dashboard** (Options page) is where you set everything:
+Once installed, click the Crumb Control icon in your browser toolbar. Everything lives in one compact popup — there's no separate settings page, no dashboard, and no account to create.
 
 | Tab | What it does |
 |---|---|
-| **Dashboard** | Overview — how many sites you've hit, recent activity |
-| **Policy Engine** | Where you write your rules (in a simple text format) |
-| **Audit Log** | Full history — searchable, filterable |
-| **Site Overrides** | Exceptions for specific sites |
-| **Cloud Sync** | Turn on cross-device sync (optional) |
-| **Statistics** | Which sites/cookie systems you encounter most |
-| **CMP Adapters** | For advanced users — add support for new cookie banners |
+| **Status** | What happened on the current site — whether a banner was found, recognised and handled |
+| **Log** | Recent activity across sites, so you can check it's doing its job |
+| **Settings** | Pick a preset, or flip individual categories |
+| **About** | Version, credits and links |
 
-### Your first policy
+### Choosing what gets blocked
 
-Open Options → Policy Engine. You'll see something like this. Edit it, click Save. Done.
+Pick a preset and you're done:
 
-```yaml
-global:
-  necessary: allow       # site-critical cookies — leave on or things break
-  preferences: reject    # remembers your language, layout, etc.
-  analytics: reject      # tracks how you use the site
-  marketing: reject      # ads, retargeting, that follow-you-around stuff
-  social: reject         # Facebook/Twitter/YouTube embedded widgets
-  unclassified: reject   # anything we're not sure about — reject by default
+- **Essential only** — reject everything except cookies the site genuinely needs to function *(default)*
+- **Balanced** — allow preferences, reject tracking and marketing
+- **Allow all** — accept everything
+- **Custom** — flip individual categories yourself
 
-sites:
-  wikipedia.org:
-    preferences: allow   # let Wikipedia remember your language
-```
+The categories are **necessary**, **preferences**, **analytics**, **marketing**, **social** and **unclassified**. `necessary` is locked on, because switching it off breaks sites. Flip any other toggle and the preset switches to Custom automatically — changes save instantly, there's no Save button.
 
-Change `reject` to `allow` (or vice versa) for whatever you're comfortable with.
+When a banner is handled, a small confirmation appears in the corner of the page for a few seconds so you know it worked. You can turn that off in Settings.
+
+---
+
+## Browser support
+
+| Browser | Status |
+|---|---|
+| **Chrome** | Supported |
+| **Firefox** | Supported |
+| **Brave** | Planned — Chromium-based, so the Chrome build is expected to work; not yet formally tested |
+| **Edge** | Planned — same as above |
+| **Opera** | Planned — same as above |
+| **Safari** | Not planned for now (needs a different extension format) |
+
+Brave, Edge and Opera all run on Chromium, so the Chrome build will very likely install and work today. We haven't verified them properly yet, so they aren't listed as supported — testing and official support for these is on the roadmap. If you try one, [open an issue](https://github.com/JuicyLies/crumb-control/issues) and tell us how it went.
 
 ---
 
@@ -159,7 +161,7 @@ Important, so we're clear:
 | Keeps a searchable log | ❌ | ❌ | ✅ |
 | Encrypted sync across devices | ❌ | ❌ | ✅ |
 
-**Credit where it's due:** this is built on top of [Consent-O-Matic](https://github.com/cavi-au/Consent-O-Matic) (Aarhus University, MIT licensed). They wrote the cookie-banner detection engine and maintain a database of 500+ banner types. This project adds the preferences layer, privacy signal, and dashboard on top.
+**Credit where it's due:** this is built on top of [Consent-O-Matic](https://github.com/cavi-au/Consent-O-Matic) (Aarhus University, MIT licensed). They wrote the cookie-banner detection engine and maintain a database of 500+ banner types. This project adds the preferences layer, privacy signal, and simplified UI on top.
 
 ---
 

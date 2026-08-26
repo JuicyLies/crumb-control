@@ -45,6 +45,10 @@ module.exports = (env, argv) => {
     { from: 'src/shared/', to: 'shared/', noErrorOnMissing: true },
     // Assets
     { from: 'src/assets/', to: 'assets/', noErrorOnMissing: true },
+    // MIT compliance: the built extension bundles Consent-O-Matic source, so the
+    // upstream copyright notice must ship inside the distributed artifact too.
+    { from: 'LICENSE', to: 'LICENSE', toType: 'file', noErrorOnMissing: true },
+    { from: path.join(consentOMaticSrc, '..', 'LICENSE'), to: 'THIRD_PARTY_LICENSES/Consent-O-Matic-LICENSE', toType: 'file', noErrorOnMissing: true },
     // Consent-O-Matic rule database (377KB, 500+ CMPs) - lives in submodule root, not Extension/
     { from: path.resolve(__dirname, 'Consent-O-Matic/BundledRules.json'), to: 'Rules.json', noErrorOnMissing: false },
     { from: path.resolve(__dirname, 'Consent-O-Matic/rules-list.json'), to: 'rules-list.json', noErrorOnMissing: true },
