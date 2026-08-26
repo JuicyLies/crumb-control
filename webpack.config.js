@@ -40,17 +40,20 @@ module.exports = (env, argv) => {
     { from: 'src/content/content.css', to: 'content.css' },
     { from: 'src/popup/popup.css', to: 'popup.css' },
     { from: 'src/options/options.css', to: 'options.css' },
+
     // Our rules
     { from: 'src/rules/', to: 'rules/', noErrorOnMissing: true },
     // Our source files (will be bundled by webpack entry points)
     { from: 'src/shared/', to: 'shared/', noErrorOnMissing: true },
     // Assets
     { from: 'src/assets/', to: 'assets/', noErrorOnMissing: true },
-    // Consent-O-Matic files
-    { from: path.join(consentOMaticSrc, 'Rules.json'), to: 'Rules.json', noErrorOnMissing: true },
-    { from: path.join(consentOMaticSrc, 'rules-list.json'), to: 'rules-list.json', noErrorOnMissing: true },
-    { from: path.join(consentOMaticSrc, 'rules.schema.json'), to: 'rules.schema.json', noErrorOnMissing: true },
-    // Copy JS files from Consent-O-Matic Extension (but not the ones we bundle)
+    // Consent-O-Matic rule database (377KB, 500+ CMPs) - lives in submodule root, not Extension/
+    { from: path.resolve(__dirname, 'Consent-O-Matic/BundledRules.json'), to: 'Rules.json', noErrorOnMissing: false },
+    { from: path.resolve(__dirname, 'Consent-O-Matic/rules-list.json'), to: 'rules-list.json', noErrorOnMissing: true },
+    { from: path.resolve(__dirname, 'Consent-O-Matic/rules.schema.json'), to: 'rules.schema.json', noErrorOnMissing: true },
+    // Copy Consent-O-Matic JS modules (ES modules, loaded by content script)
+    { from: path.join(consentOMaticSrc, '*.js'), to: '', noErrorOnMissing: true },
+    // Copy remaining non-JS Consent-O-Matic files
     { 
       from: consentOMaticSrc, 
       to: '', 

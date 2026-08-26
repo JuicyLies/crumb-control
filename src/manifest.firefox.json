@@ -15,7 +15,9 @@
     "<all_urls>"
   ],
   "background": {
-    "scripts": ["background.js"],
+    "scripts": [
+      "background.js"
+    ],
     "type": "module"
   },
   "content_scripts": [
@@ -52,5 +54,8 @@
       "id": "udp@juicylies.dev",
       "strict_min_version": "109.0"
     }
-  }
+  },
+  "web_accessible_resources": [
+    "Rules.json"
+  ]
 }

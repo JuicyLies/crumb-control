@@ -1,217 +1,178 @@
 // content.js - Content script for Universal Data Permission Layer
-// Integrates Consent-O-Matic's CMP detection with our Policy Engine
+// Bundled by webpack - imports Consent-O-Matic engine + our PolicyEngine
 
 import { PolicyEngine, CONSENT_CATEGORIES, CONSENT_DECISIONS } from '../shared/PolicyEngine.js';
+import ConsentEngine from '../../Consent-O-Matic/Extension/ConsentEngine.js';
+import GDPRConfig from './GDPRConfig.js';
 
-// Global flag to prevent double initialization
-window._udpInitialized = window._udpInitialized || false;
+let udpPolicyEngine = null;
+let udpSiteHost = '';
+let udpIsThirdParty = false;
 
-class UDPContentScript {
-  constructor() {
-    this.policyEngine = new PolicyEngine();
-    this.consentEngine = null;
-    this.siteHost = '';
-    this.isThirdParty = false;
-    this.decisions = {};
-    this.pendingCMPs = new Map();
-    this.init();
-  }
-
-  async init() {
-    if (window._udpInitialized) return;
-    window._udpInitialized = true;
-    
-    // Determine site context
-    this.siteHost = window.location.hostname;
-    this.isThirdParty = window !== window.top;
-    
-    if (this.isThirdParty) {
-      try {
-        // Get top frame URL for cross-frame coordination
-        this.siteHost = await this.getTopFrameHost();
-      } catch (e) {
-        console.warn('[UDP] Could not determine top frame host:', e);
-      }
+function getUDPConsentValues() {
+  if (!udpPolicyEngine) return {};
+  
+  const decisions = udpPolicyEngine.getAllDecisions(udpSiteHost);
+  const values = {};
+  
+  // Map our policy categories to CMP categories (A/B/D/E/F/X)
+  const mapping = {
+    [CONSENT_CATEGORIES.PREFERENCES]: 'A',
+    [CONSENT_CATEGORIES.ANALYTICS]: 'B',
+    [CONSENT_CATEGORIES.MARKETING]: 'F',
+    [CONSENT_CATEGORIES.SOCIAL]: 'E',
+    [CONSENT_CATEGORIES.UNCLASSIFIED]: 'X',
+  };
+  
+  for (const [cat, decision] of Object.entries(decisions)) {
+    const cmpCat = mapping[cat];
+    if (cmpCat) {
+      values[cmpCat] = decision === CONSENT_DECISIONS.ALLOW;
     }
-    
-    // Load policy from background
-    await this.loadPolicy();
-    
-    // Load Consent-O-Matic engine if available
-    await this.loadConsentEngine();
-    
-    // Start listening for CMP detections
-    this.startCMPListener();
   }
+  
+  return values;
+}
 
-  async getTopFrameHost() {
-    return new Promise((resolve) => {
-      chrome.runtime.sendMessage({ type: 'GET_TOP_FRAME_URL' }, (response) => {
-        if (response && response.url) {
-          const url = new URL(response.url);
-          resolve(url.hostname);
-        } else {
-          resolve(window.location.hostname);
-        }
+async function contentScriptRunner() {
+  if (document.contentType !== "text/html") return;
+
+  // Figure out the URL
+  let url = location.href;
+  let insideIframe = window !== window.parent;
+  if (insideIframe) {
+    url = await new Promise((resolve) => {
+      chrome.runtime.sendMessage("GetTabUrl", (response) => {
+        resolve(response);
       });
     });
   }
+  const urlObj = new URL(url);
+  udpSiteHost = urlObj.host;
+  udpIsThirdParty = insideIframe;
 
-  async loadPolicy() {
-    return new Promise((resolve) => {
-      chrome.runtime.sendMessage({ type: 'GET_POLICY' }, (response) => {
-        if (response && response.policy) {
-          this.policyEngine.load(response.policy);
-          this.decisions = this.policyEngine.getAllDecisions(this.siteHost);
-          console.log('[UDP] Policy loaded for', this.siteHost, this.decisions);
-        }
-        resolve();
-      });
+  // Initialize our policy engine with defaults
+  udpPolicyEngine = new PolicyEngine();
+
+  // Get Consent-O-Matic's rule lists from background
+  const fetchedRules = await new Promise((resolve) => {
+    chrome.runtime.sendMessage("GetRuleList", (response) => {
+      resolve(response || []);
     });
+  });
+
+  const customRules = await GDPRConfig.getCustomRuleLists();
+
+  // Merge rule lists
+  const config = Object.assign({}, ...fetchedRules, customRules);
+  if (config.$schema) delete config.$schema;
+
+  // Get debug and general settings
+  const debugValues = await GDPRConfig.getDebugValues();
+  const generalSettings = await GDPRConfig.getGeneralSettings();
+
+  // Get OUR consent values from policy engine
+  const consentTypes = getUDPConsentValues();
+
+  if (debugValues.debugLog) {
+    console.log("[UDP] Fetched rules:", fetchedRules.length, "rule sets");
+    console.log("[UDP] Consent types from policy:", consentTypes);
+    console.log("[UDP] Site:", udpSiteHost, "| Third party:", udpIsThirdParty);
   }
 
-  async loadConsentEngine() {
-    // Check if Consent-O-Matic is already loaded (injected by their content script)
-    if (window.ConsentEngine && window.ConsentEngine.singleton) {
-      this.consentEngine = window.ConsentEngine.singleton;
-      console.log('[UDP] Found existing ConsentEngine instance');
-      this.patchConsentEngine();
-      return;
-    }
-    
-    // Wait for ConsentEngine to be available
-    let attempts = 0;
-    while (attempts < 50) { // 5 seconds max
-      await new Promise(r => setTimeout(r, 100));
-      if (window.ConsentEngine && window.ConsentEngine.singleton) {
-        this.consentEngine = window.ConsentEngine.singleton;
-        console.log('[UDP] ConsentEngine found after wait');
-        this.patchConsentEngine();
-        return;
-      }
-      attempts++;
-    }
-    
-    console.log('[UDP] No ConsentEngine found, running in policy-only mode');
-    // We'll still apply GPC headers and can manually handle simple CMPs
-  }
-
-  patchConsentEngine() {
-    if (!this.consentEngine) return;
-    
-    // Override the consent handling to use our policy decisions
-    const originalHandleCallback = this.consentEngine.handledCallback;
-    this.consentEngine.handledCallback = (evt) => {
-      // Log audit entry for our dashboard
-      if (evt.handled && this.consentEngine.currentCMP) {
-        this.logAudit({
-          url: window.location.href,
-          site: this.siteHost,
-          cmp: this.consentEngine.currentCMP.name,
-          category: 'all', // Could be more granular
+  // Callback for when CMP is handled
+  const handledCallback = (evt) => {
+    if (evt.handled) {
+      // Log to our audit system
+      chrome.runtime.sendMessage({
+        type: "LOG_AUDIT",
+        entry: {
+          timestamp: Date.now(),
+          url: location.href,
+          site: udpSiteHost,
+          cmp: evt.cmpName,
+          clicks: evt.clicks,
           decision: 'auto',
           action: 'auto',
-          clicks: evt.clicks,
           success: true
-        });
-      }
-      
-      // Call original callback
-      if (originalHandleCallback) {
-        originalHandleCallback(evt);
-      }
-    };
-    
-    // Patch the consent type resolution to use our policy
-    const originalRunMethod = this.consentEngine.currentCMP?.runMethod;
-    // Note: We can't easily patch the internal consent type mapping without deeper integration
-    // The approach is to inject our decisions into the consentTypes passed to the engine
-  }
-
-  startCMPListener() {
-    // Listen for messages from background (policy updates)
-    chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-      if (message.type === 'POLICY_UPDATED') {
-        this.policyEngine.load(message.policy);
-        this.decisions = this.policyEngine.getAllDecisions(this.siteHost);
-        console.log('[UDP] Policy updated:', this.decisions);
-      }
-    });
-  }
-
-  /**
-   * Get consent decision for a specific CMP category
-   * Maps Consent-O-Matic categories (A, B, D, E, F, X) to our categories
-   */
-  getDecisionForCMPCategory(cmpCategory) {
-    // Consent-O-Matic categories:
-    // A = Preferences (Functional)
-    // B = Performance (Analytics)
-    // D = Information (Analytics)
-    // E = Content (Marketing)
-    // F = Advertising (Marketing)
-    // X = Other (Unclassified)
-    
-    const mapping = {
-      'A': CONSENT_CATEGORIES.PREFERENCES,
-      'B': CONSENT_CATEGORIES.ANALYTICS,
-      'D': CONSENT_CATEGORIES.ANALYTICS,
-      'E': CONSENT_CATEGORIES.MARKETING,
-      'F': CONSENT_CATEGORIES.MARKETING,
-      'X': CONSENT_CATEGORIES.UNCLASSIFIED
-    };
-    
-    const ourCategory = mapping[cmpCategory] || CONSENT_CATEGORIES.UNCLASSIFIED;
-    return this.decisions[ourCategory] || CONSENT_DECISIONS.REJECT;
-  }
-
-  /**
-   * Override consent values passed to ConsentEngine with our policy decisions
-   */
-  getPolicyConsentValues() {
-    const values = {};
-    for (const [cat, decision] of Object.entries(this.decisions)) {
-      // Map our categories back to CMP categories
-      const mapping = {
-        [CONSENT_CATEGORIES.PREFERENCES]: 'A',
-        [CONSENT_CATEGORIES.ANALYTICS]: 'B', // Both B and D map to analytics
-        [CONSENT_CATEGORIES.MARKETING]: 'F', // Both E and F map to marketing
-        [CONSENT_CATEGORIES.SOCIAL]: 'E',
-        [CONSENT_CATEGORIES.UNCLASSIFIED]: 'X',
-        [CONSENT_CATEGORIES.NECESSARY]: null // Never in CMP
-      };
-      
-      const cmpCat = mapping[cat];
-      if (cmpCat) {
-        values[cmpCat] = decision === CONSENT_DECISIONS.ALLOW;
-      }
+        }
+      });
+      console.log("[UDP] Handled CMP:", evt.cmpName, "clicks:", evt.clicks);
+    } else if (evt.error) {
+      console.warn("[UDP] CMP error");
     }
-    return values;
-  }
+  };
 
-  logAudit(entry) {
-    chrome.runtime.sendMessage({ type: 'LOG_AUDIT', entry });
-  }
+  // Start ConsentEngine with OUR consent values
+  if (generalSettings.enabled !== false) {
+    ConsentEngine.debugValues = debugValues;
+    ConsentEngine.generalSettings = generalSettings;
+    ConsentEngine.topFrameUrl = udpSiteHost;
 
-  // Expose API for dashboard/options page
-  exposeAPI() {
-    window.UDP = {
-      getDecisions: () => this.decisions,
-      getPolicy: () => this.policyEngine.serialize(),
-      setSiteOverride: (category, decision) => {
-        this.policyEngine.setSiteOverride(this.siteHost, category, decision);
-        this.decisions = this.policyEngine.getAllDecisions(this.siteHost);
-        chrome.runtime.sendMessage({ type: 'SET_POLICY', policy: this.policyEngine.serialize() });
+    try {
+      const engine = new ConsentEngine(config, consentTypes, handledCallback);
+      ConsentEngine.singleton = engine;
+
+      if (debugValues.debugLog) {
+        console.log("[UDP] ConsentEngine loaded with", engine.cmps.length, "CMPs");
       }
-    };
+    } catch (e) {
+      console.error("[UDP] Failed to start ConsentEngine:", e);
+    }
   }
 }
+
+// Scroll behaviour preservation (from Consent-O-Matic)
+window.consentScrollBehaviours = {};
+
+function getCalculatedStyles() {
+  ["html", "html body"].forEach(element => {
+    let node = document.querySelector(element);
+    if (node) {
+      let styles = window.getComputedStyle(node);
+      window.consentScrollBehaviours[element + ".consent-scrollbehaviour-override"] = ["position", "overflow", "overflow-y"].map(property => {
+        return { property, value: styles[property] };
+      });
+    }
+  });
+}
+
+let topContentTag = document.querySelector("html");
+if (topContentTag) {
+  let observer = new MutationObserver((mutations) => {
+    mutations.forEach((mutation) => {
+      mutation.addedNodes.forEach((node) => {
+        if (node.matches != null && node.matches("body")) {
+          getCalculatedStyles();
+          observer.disconnect();
+        }
+      });
+    });
+  });
+  observer.observe(topContentTag, { childList: true });
+}
+
+window.addEventListener("message", (event) => {
+  try {
+    if (event.data?.enforceScrollBehaviours != null) {
+      ConsentEngine.enforceScrollBehaviours(event.data.enforceScrollBehaviours);
+    }
+  } catch (e) {
+    console.error("[UDP] Error in message listener:", e);
+  }
+});
 
 // Initialize
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', () => new UDPContentScript());
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", contentScriptRunner);
 } else {
-  new UDPContentScript();
+  contentScriptRunner();
 }
 
-export { UDPContentScript };
+// Expose UDP API
+window.UDP = {
+  getPolicy: () => udpPolicyEngine?.serialize(),
+  getDecisions: () => udpPolicyEngine?.getAllDecisions(udpSiteHost) || {},
+  getSiteHost: () => udpSiteHost,
+  isThirdParty: () => udpIsThirdParty
+};
