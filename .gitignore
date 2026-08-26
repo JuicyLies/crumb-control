@@ -5,5 +5,4 @@ dist/
 .env
 .cache/
 *.zip
-package-lock.json
 Consent-O-Matic/BundledRules.json

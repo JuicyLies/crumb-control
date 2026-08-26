@@ -1,11 +1,10 @@
 name: Deploy Privacy Policy to GitHub Pages
 
 on:
-  push:
-    branches: [master, main]
-    paths:
-      - 'PRIVACY_POLICY.md'
-      - '.github/workflows/pages.yml'
+  # Auto-trigger disabled: GitHub Pages is not enabled for this repo, so every
+  # push failed at 'Setup Pages'. Enable Pages in repo settings, then re-add the
+  # push trigger. Until then this can be launched manually.
+  workflow_dispatch:
 
 permissions:
   contents: read
