@@ -1,6 +1,6 @@
 {
   "name": "universal-data-permission-layer",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Universal Data Permission Layer - MV3 browser extension for unified consent management",
   "license": "MIT",
   "repository": {
