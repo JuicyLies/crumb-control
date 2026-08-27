@@ -134,6 +134,10 @@ There's also a supplementary ruleset in [`rules-extra/`](rules-extra/) adding br
 
 **Still not perfect.** Some banners use custom in-house CMPs with no rule anywhere. When Crumb Control can't confidently identify a banner it leaves it alone rather than clicking blind — guessing wrong on a consent dialog is worse than doing nothing. If you hit one, use **Report broken cookie banner** on the Status tab.
 
+**Verified on real sites.** Repubblica, La Stampa and El Mundo banners are removed from the DOM with the extension loaded; see [docs/LIVE_TEST_RESULTS.md](docs/LIVE_TEST_RESULTS.md) for the full before/after run, including what *didn't* work and why.
+
+**Pay-or-consent walls are out of scope.** Some publishers (ANSA, for example) offer only "accept" or "reject **and subscribe**" — there is no free reject. Crumb Control deliberately leaves those alone rather than pushing you toward a paid subscription.
+
 ---
 
 ## Browser support

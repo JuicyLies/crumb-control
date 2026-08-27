@@ -1,0 +1,185 @@
+[
+ {
+  "url": "https://www.repubblica.it",
+  "error": null,
+  "probe": {
+   "count": 12,
+   "banners": [
+    {
+     "sel": "#iubenda-cs-banner",
+     "id": "#iubenda-cs-banner.iubenda-cs-black.iubenda-cs-default-floating",
+     "text": "powered by I ricavi ottenuti dalla pubblicità personalizzata ci aiutano a supportare il lavoro della nostra re"
+    },
+    {
+     "sel": ".iubenda-cs-container",
+     "id": ".iubenda-cs-container",
+     "text": "powered by I ricavi ottenuti dalla pubblicità personalizzata ci aiutano a supportare il lavoro della nostra re"
+    },
+    {
+     "sel": "[class*=\"iubenda-cs-\"]",
+     "id": ".is-iubenda-cs-banner-open.site-repubblica",
+     "text": "Vai al contenuto principale Menu Cerca ABBONATI Edicola Accedi Cerca articoli o argomenti su Repubblica Cerca "
+    },
+    {
+     "sel": "[class*=\"iubenda-cs-\"]",
+     "id": ".iubenda-cs-content",
+     "text": "powered by I ricavi ottenuti dalla pubblicità personalizzata ci aiutano a supportare il lavoro della nostra re"
+    }
+   ],
+   "scrollLocked": false
+  }
+ },
+ {
+  "url": "https://www.corriere.it",
+  "error": null,
+  "probe": {
+   "count": 0,
+   "banners": [],
+   "scrollLocked": true
+  }
+ },
+ {
+  "url": "https://www.ansa.it",
+  "error": null,
+  "probe": {
+   "count": 10,
+   "banners": [
+    {
+     "sel": "#iubenda-cs-banner",
+     "id": "#iubenda-cs-banner.iubenda-cs-black.iubenda-cs-default-floating",
+     "text": "Sei già abbonato ad ANSA.it? ACCEDI RIFIUTA E ABBONATI Gentile Lettore, ogni giorno ANSA è impegnata nella pro"
+    },
+    {
+     "sel": ".iubenda-cs-container",
+     "id": ".iubenda-cs-container",
+     "text": "Sei già abbonato ad ANSA.it? ACCEDI RIFIUTA E ABBONATI Gentile Lettore, ogni giorno ANSA è impegnata nella pro"
+    },
+    {
+     "sel": "[class*=\"iubenda-cs-\"]",
+     "id": ".iubenda-cs-content",
+     "text": "Sei già abbonato ad ANSA.it? ACCEDI RIFIUTA E ABBONATI Gentile Lettore, ogni giorno ANSA è impegnata nella pro"
+    },
+    {
+     "sel": "[class*=\"iubenda-cs-\"]",
+     "id": ".iubenda-cs-rationale",
+     "text": "Sei già abbonato ad ANSA.it? ACCEDI RIFIUTA E ABBONATI Gentile Lettore, ogni giorno ANSA è impegnata nella pro"
+    }
+   ],
+   "scrollLocked": true
+  }
+ },
+ {
+  "url": "https://www.gazzetta.it",
+  "error": null,
+  "probe": {
+   "count": 0,
+   "banners": [],
+   "scrollLocked": true
+  }
+ },
+ {
+  "url": "https://www.ilsole24ore.com",
+  "error": null,
+  "probe": {
+   "count": 0,
+   "banners": [],
+   "scrollLocked": false
+  }
+ },
+ {
+  "url": "https://www.lastampa.it",
+  "error": null,
+  "probe": {
+   "count": 7,
+   "banners": [
+    {
+     "sel": "#iubenda-cs-banner",
+     "id": "#iubenda-cs-banner.iubenda-cs-default.iubenda-cs-bottom",
+     "text": "Continua senza accettare Informativa Noi e terze parti selezionate utilizziamo cookie o tecnologie simili per "
+    },
+    {
+     "sel": ".iubenda-cs-container",
+     "id": ".iubenda-cs-container",
+     "text": "Continua senza accettare Informativa Noi e terze parti selezionate utilizziamo cookie o tecnologie simili per "
+    },
+    {
+     "sel": "[class*=\"iubenda-cs-\"]",
+     "id": ".iubenda-cs-content",
+     "text": "Continua senza accettare Informativa Noi e terze parti selezionate utilizziamo cookie o tecnologie simili per "
+    },
+    {
+     "sel": "[class*=\"iubenda-cs-\"]",
+     "id": ".iubenda-cs-rationale",
+     "text": "Continua senza accettare Informativa Noi e terze parti selezionate utilizziamo cookie o tecnologie simili per "
+    }
+   ],
+   "scrollLocked": false
+  }
+ },
+ {
+  "url": "https://www.ilfattoquotidiano.it",
+  "error": null,
+  "probe": {
+   "count": 0,
+   "banners": [],
+   "scrollLocked": false
+  }
+ },
+ {
+  "url": "https://www.tgcom24.mediaset.it",
+  "error": null,
+  "probe": {
+   "count": 0,
+   "banners": [],
+   "scrollLocked": false
+  }
+ },
+ {
+  "url": "https://www.lemonde.fr",
+  "error": null,
+  "probe": {
+   "count": 0,
+   "banners": [],
+   "scrollLocked": true
+  }
+ },
+ {
+  "url": "https://www.spiegel.de",
+  "error": null,
+  "probe": {
+   "count": 1,
+   "banners": [
+    {
+     "sel": "[id^=\"sp_message_container\"]",
+     "id": "#sp_message_container_1426772",
+     "text": ""
+    }
+   ],
+   "scrollLocked": true
+  }
+ },
+ {
+  "url": "https://www.elmundo.es",
+  "error": null,
+  "probe": {
+   "count": 1,
+   "banners": [
+    {
+     "sel": ".didomi-popup-container",
+     "id": ".didomi-popup-container.didomi-popup__dialog",
+     "text": "¿Eres suscriptor? Iniciar sesión Aviso de privacidad El contenido de la web a la que quieres acceder ha sido e"
+    }
+   ],
+   "scrollLocked": true
+  }
+ },
+ {
+  "url": "https://www.bbc.co.uk",
+  "error": null,
+  "probe": {
+   "count": 0,
+   "banners": [],
+   "scrollLocked": false
+  }
+ }
+]

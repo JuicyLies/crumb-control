@@ -1,0 +1,173 @@
+[
+ {
+  "url": "https://www.repubblica.it",
+  "error": null,
+  "udp": [
+   "[UDP] Handled CMP: iubendaExtended clicks: 1"
+  ],
+  "probe": {
+   "count": 1,
+   "banners": [
+    {
+     "sel": "[class*=\"iubenda-cs-\"]",
+     "id": ".is-iubenda-cs-banner-open.site-repubblica",
+     "text": "Vai al contenuto principale Menu Cerca ABBONATI Edicola Accedi Cerca articoli o argomenti su Repubblica Cerca "
+    }
+   ],
+   "scrollLocked": false
+  }
+ },
+ {
+  "url": "https://www.corriere.it",
+  "error": null,
+  "udp": [
+   "[UDP] CMP error"
+  ],
+  "probe": {
+   "count": 0,
+   "banners": [],
+   "scrollLocked": true
+  }
+ },
+ {
+  "url": "https://www.ansa.it",
+  "error": null,
+  "udp": [
+   "[UDP] Handled CMP: iubendaExtended clicks: 1"
+  ],
+  "probe": {
+   "count": 10,
+   "banners": [
+    {
+     "sel": "#iubenda-cs-banner",
+     "id": "#iubenda-cs-banner.iubenda-cs-black.iubenda-cs-default-floating",
+     "text": "Sei già abbonato ad ANSA.it? ACCEDI RIFIUTA E ABBONATI Gentile Lettore, ogni giorno ANSA è impegnata nella pro"
+    },
+    {
+     "sel": ".iubenda-cs-container",
+     "id": ".iubenda-cs-container",
+     "text": "Sei già abbonato ad ANSA.it? ACCEDI RIFIUTA E ABBONATI Gentile Lettore, ogni giorno ANSA è impegnata nella pro"
+    },
+    {
+     "sel": "[class*=\"iubenda-cs-\"]",
+     "id": ".iubenda-cs-content",
+     "text": "Sei già abbonato ad ANSA.it? ACCEDI RIFIUTA E ABBONATI Gentile Lettore, ogni giorno ANSA è impegnata nella pro"
+    },
+    {
+     "sel": "[class*=\"iubenda-cs-\"]",
+     "id": ".iubenda-cs-rationale",
+     "text": "Sei già abbonato ad ANSA.it? ACCEDI RIFIUTA E ABBONATI Gentile Lettore, ogni giorno ANSA è impegnata nella pro"
+    }
+   ],
+   "scrollLocked": true
+  }
+ },
+ {
+  "url": "https://www.gazzetta.it",
+  "error": null,
+  "udp": [
+   "[UDP] CMP error"
+  ],
+  "probe": {
+   "count": 0,
+   "banners": [],
+   "scrollLocked": true
+  }
+ },
+ {
+  "url": "https://www.ilsole24ore.com",
+  "error": null,
+  "udp": [],
+  "probe": {
+   "count": 0,
+   "banners": [],
+   "scrollLocked": false
+  }
+ },
+ {
+  "url": "https://www.lastampa.it",
+  "error": null,
+  "udp": [
+   "[UDP] Handled CMP: iubuenda clicks: 2"
+  ],
+  "probe": {
+   "count": 0,
+   "banners": [],
+   "scrollLocked": false
+  }
+ },
+ {
+  "url": "https://www.ilfattoquotidiano.it",
+  "error": null,
+  "udp": [
+   "[UDP] Handled CMP: clickio clicks: 1"
+  ],
+  "probe": {
+   "count": 0,
+   "banners": [],
+   "scrollLocked": false
+  }
+ },
+ {
+  "url": "https://www.tgcom24.mediaset.it",
+  "error": null,
+  "udp": [],
+  "probe": {
+   "count": 0,
+   "banners": [],
+   "scrollLocked": false
+  }
+ },
+ {
+  "url": "https://www.lemonde.fr",
+  "error": null,
+  "udp": [],
+  "probe": {
+   "count": 0,
+   "banners": [],
+   "scrollLocked": true
+  }
+ },
+ {
+  "url": "https://www.spiegel.de",
+  "error": null,
+  "udp": [
+   "[UDP] Handled CMP: sourcepoint_frame_2022 clicks: 0"
+  ],
+  "probe": {
+   "count": 1,
+   "banners": [
+    {
+     "sel": "[id^=\"sp_message_container\"]",
+     "id": "#sp_message_container_1426772",
+     "text": ""
+    }
+   ],
+   "scrollLocked": true
+  }
+ },
+ {
+  "url": "https://www.elmundo.es",
+  "error": null,
+  "udp": [
+   "[UDP] Handled CMP: didomi.io clicks: 22"
+  ],
+  "probe": {
+   "count": 0,
+   "banners": [],
+   "scrollLocked": false
+  }
+ },
+ {
+  "url": "https://www.bbc.co.uk",
+  "error": null,
+  "udp": [
+   "[UDP] Handled CMP: xe.com clicks: 0"
+  ],
+  "probe": {
+   "count": 0,
+   "banners": [],
+   "scrollLocked": false
+  }
+ }
+]
