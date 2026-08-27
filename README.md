@@ -50,7 +50,7 @@ Then the lobbying started:
 | 🔢 **Counts what it's saved you** | A running tally of banners handled — stored locally, never sent anywhere |
 | 📡 **Sends a "don't track me" signal** | A universal opt-out signal called Global Privacy Control. Some laws (California) legally require sites to obey it. |
 | 📋 **Keeps a log** | Every decision it made — which site, what it clicked, when. Download it as a file any time. |
-| 🔒 **Sync across your devices (optional)** | Your settings can follow you between laptop and desktop. Encrypted end-to-end. Off by default. |
+| 🔒 **Settings follow your browser profile** | Uses your browser's own sync, so preferences carry between devices if you're signed in. |
 | 🚫 **Zero tracking** | The add-on itself collects **nothing**. No accounts. No servers. Everything stays in your browser. |
 
 ---
@@ -158,7 +158,7 @@ Brave, Edge and Opera all run on Chromium, so the Chrome build will very likely 
 - ✅ **Collects no data.** No analytics, no telemetry, no accounts, no servers you don't control.
 - ✅ **Stays local.** Everything is in your browser's own storage. It never phones home.
 - ✅ **Open source.** Every line of code is public. Read it, audit it, fork it.
-- ✅ **No hidden network requests.** The only thing it sends is a `Sec-GPC: 1` header (the privacy signal) to sites you're already visiting. If you turn on sync, it talks *only* to the endpoint you configure.
+- ✅ **No hidden network requests.** The only thing it sends is a `Sec-GPC: 1` header (the privacy signal) to sites you're already visiting. There is no backend, no sync server, and nothing phones home.
 
 Full details: see [PRIVACY_POLICY.md](PRIVACY_POLICY.md).
 
@@ -188,9 +188,9 @@ Important, so we're clear:
 | Different rules for different sites | ❌ | on/off only | ✅ |
 | Sends the Global Privacy Control signal | ❌ | ❌ | ✅ |
 | Keeps a searchable log | ❌ | ❌ | ✅ |
-| Encrypted sync across devices | ❌ | ❌ | ✅ |
+| Encrypted sync across devices | ❌ | ❌ | via browser |
 
-**Credit where it's due:** this is built on top of [Consent-O-Matic](https://github.com/cavi-au/Consent-O-Matic) (Aarhus University, MIT licensed). They wrote the cookie-banner detection engine and maintain a database of 500+ banner types. This project adds the preferences layer, privacy signal, and simplified UI on top.
+**Credit where it's due:** this is built on top of [Consent-O-Matic](https://github.com/cavi-au/Consent-O-Matic) (Aarhus University, MIT licensed). They wrote the cookie-banner detection engine and maintain the community rule corpus. This project bundles 209 CMP rules and adds the preferences layer, privacy signal, language-tolerant matching and simplified UI on top.
 
 ---
 

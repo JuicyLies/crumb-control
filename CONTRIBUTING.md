@@ -23,7 +23,7 @@ npm run build:chrome   # verify it compiles
 
 ## CMP Adapter SDK
 
-The adapter interface is documented in the dashboard (Adapters tab) and in `src/options/options.html`. An adapter is a small module exporting:
+The adapter interface. An adapter is a small module exporting:
 
 ```js
 export default {
@@ -41,6 +41,32 @@ export default {
 - Adapter must target a specific, identifiable CMP
 - No paywall bypassing, no falsifying affirmative consent
 - Must handle the CMP's own controls, not override them
+
+## Non-English banners
+
+Most consent banners aren't in English, and this is where coverage is weakest — help here is very welcome.
+
+Two things to know before you start:
+
+**1. Text matching is already normalised.** `scripts/patch-matcher.js` patches Consent-O-Matic's `Tools.findElement()` at build time so `textFilter` comparisons ignore accents, curly vs straight apostrophes, and non-breaking spaces. You do **not** need to list `Funzionalità` and `Funzionalita` separately — write the natural form and it will match either.
+
+The patch is idempotent and re-applies on every build (the submodule stays pristine). If upstream restructures that function the build fails loudly rather than shipping something broken.
+
+Verify the logic with:
+```bash
+npm run test:matcher
+```
+
+**2. Add new rules to `rules-extra/`, not the submodule.** Anything in `Consent-O-Matic/` is wiped on the next submodule update. `rules-extra/*.json` is merged **after** upstream, and upstream always wins on key collisions — so these files can only fill gaps, never break existing coverage.
+
+To add coverage for a banner in your language:
+
+1. Find the banner's container and button selectors (DevTools, right-click → Inspect)
+2. Add an entry to `rules-extra/crumb-control-i18n.json` following the existing shape
+3. Include the reject/customise/save button text in your language under `textFilter`
+4. Rebuild and test on the real site: `npm run build:chrome`
+
+Keep detectors specific. A rule that matches too broadly will click the wrong thing on unrelated sites, which is worse than not matching at all.
 
 ## Reporting Bugs
 

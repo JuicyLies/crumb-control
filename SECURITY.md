@@ -28,15 +28,14 @@ This extension operates under the following assumptions:
 
 | Asset | Protection |
 |-------|------------|
-| User policy & audit log | Stored in `chrome.storage` (local + sync); never sent to us |
-| Sync passphrase | Derived client-side; never transmitted |
-| Sync payload | Encrypted with AES-256-GCM before leaving device |
+| User preferences & activity log | Stored in `chrome.storage` (local + sync); never sent to us |
+| Banner counter | Local only; never transmitted |
 | CMP interaction | Uses the CMP's own DOM and event handlers; no code injection beyond user-initiated clicks |
-| Network requests | Only to user-configured sync endpoint; no telemetry, no vendor backend |
+| Network requests | None. The extension has no backend and makes no outbound calls — only the `Sec-GPC: 1` header on requests the browser was already making |
 
 **Explicitly out of scope:**
 - Compromise of the browser's own storage APIs
-- Compromise of the user's sync endpoint
+- Compromise of the browser vendor's profile sync (if you are signed in, `chrome.storage.sync` is replicated under the browser's own policy, not ours)
 - Sites that detect and deliberately break when consent is refused
 
 ## Known Limitations
