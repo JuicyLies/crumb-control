@@ -44,7 +44,13 @@
         <div class="main-content">
           <div class="status-banner" id="protectionStatus">Checking...</div>
 
-          <div class="section-label">Consent decisions</div>
+          <div class="counter-card" id="counterCard">
+            <span class="counter-value" id="counterValue">0</span>
+            <span class="counter-label">cookie banners handled for you</span>
+            <span class="counter-since" id="counterSince"></span>
+          </div>
+
+          <div class="section-label">Consent decisions <span class="label-hint">tap to change for this site</span></div>
           <div class="decisions-grid" id="decisionsGrid"><!-- populated by JS --></div>
 
           <div class="home-actions">
@@ -89,28 +95,8 @@
           <h1>Settings</h1>
         </header>
         <div class="main-content">
-          <div class="section-label">Preset</div>
-          <div class="preset-list">
-            <button class="preset-btn" data-preset="essential">
-              <span class="preset-name">Essential only</span>
-              <span class="preset-desc">Necessary cookies only. Default.</span>
-            </button>
-            <button class="preset-btn" data-preset="balanced">
-              <span class="preset-name">Balanced</span>
-              <span class="preset-desc">+ preferences allowed.</span>
-            </button>
-            <button class="preset-btn" data-preset="allowAll">
-              <span class="preset-name">Allow all</span>
-              <span class="preset-desc">Accept everything.</span>
-            </button>
-            <button class="preset-btn" data-preset="custom">
-              <span class="preset-name">Custom</span>
-              <span class="preset-desc">Set below, per category.</span>
-            </button>
-          </div>
-
           <div class="custom-toggles" id="customToggles">
-            <div class="section-label">Categories</div>
+            <div class="section-label">Cookie categories</div>
             <div class="toggle-row toggle-locked" data-category="necessary">
               <span class="toggle-info">
                 <span class="toggle-name">Necessary</span>
@@ -207,22 +193,49 @@
 
           <div class="about-section">
             <h3>What is this?</h3>
-            <p>A Manifest V3 browser extension that goes beyond cookie banner clicking to provide a comprehensive, extensible data permission layer.</p>
+            <p>Crumb Control answers cookie banners for you. You set your preferences once and it picks the right buttons on every site you visit — so you stop clicking "Reject All" through three layers of menus.</p>
+            <p>It's the browser-level consent setting the EU's ePrivacy Regulation was supposed to give everyone, before lobbying shelved it.</p>
+          </div>
+
+          <div class="about-section">
+            <h3>How it works</h3>
+            <ul>
+              <li><strong>209 CMP rules</strong> — recognises OneTrust, Cookiebot, Quantcast, Didomi, Sourcepoint, Iubenda, Usercentrics and 200+ more</li>
+              <li><strong>Accent-tolerant matching</strong> — banners in Italian, French, German, Spanish and other languages match even with accents, curly apostrophes or odd spacing</li>
+              <li><strong>Global Privacy Control</strong> — sends a <code>Sec-GPC: 1</code> header, which some laws legally require sites to honour</li>
+              <li><strong>Per-site overrides</strong> — tap any decision on the Status tab to change it for that site alone</li>
+            </ul>
+          </div>
+
+          <div class="about-section">
+            <h3>Your privacy</h3>
+            <p>No accounts, no analytics, no telemetry, no servers. Your settings, your activity log and your banner counter never leave this browser.</p>
+            <p>The only network request it makes is the <code>Sec-GPC</code> header on sites you're already visiting.</p>
+          </div>
+
+          <div class="about-section">
+            <h3>Honest limitations</h3>
+            <ul>
+              <li>Some banners still aren't recognised. When Crumb Control isn't sure, it leaves the banner alone rather than clicking blind — that's deliberate.</li>
+              <li>It never fakes consent. If you say reject, it clicks reject.</li>
+              <li>Sending a signal doesn't force a site to obey it, especially outside the EU and California.</li>
+              <li>It won't bypass paywalls, and it doesn't touch strictly-necessary cookies.</li>
+            </ul>
+            <p>Hit a banner it missed? Use <strong>Report broken cookie banner</strong> on the Status tab — that's how coverage improves.</p>
           </div>
 
           <div class="about-section">
             <h3>Built on</h3>
             <ul>
-              <li><strong>Consent-O-Matic</strong> (MIT) — CMP detection &amp; rule engine</li>
-              <li><strong>Chrome Declarative Net Request</strong> — GPC header injection</li>
+              <li><strong>Consent-O-Matic</strong> (Aarhus University, MIT) — CMP detection &amp; rule engine</li>
+              <li><strong>Declarative Net Request</strong> — GPC header injection</li>
               <li><strong>Manifest V3</strong> — modern extension architecture</li>
             </ul>
           </div>
 
           <div class="about-section">
             <h3>Legal</h3>
-            <p>Crumb Control is released under the MIT licence and is provided as-is, with no warranty.</p>
-            <p>It stores your settings on your own device and sends no data anywhere. It is a convenience tool, not legal advice, and it does not guarantee that any given website honours the choices it submits.</p>
+            <p>Released under the MIT licence and provided as-is, with no warranty. It's a convenience tool, not legal advice, and it can't guarantee any site honours the choices it submits.</p>
           </div>
 
           <div class="about-section">
@@ -231,12 +244,9 @@
               <a href="https://github.com/JuicyLies/crumb-control" target="_blank" rel="noopener">GitHub repository</a>
               <a href="https://github.com/JuicyLies/crumb-control/issues" target="_blank" rel="noopener">Report issues</a>
               <a href="https://github.com/cavi-au/Consent-O-Matic" target="_blank" rel="noopener">Consent-O-Matic (upstream)</a>
+              <a href="https://github.com/JuicyLies/crumb-control/blob/main/PRIVACY_POLICY.md" target="_blank" rel="noopener">Privacy policy</a>
+              <a href="https://github.com/JuicyLies/crumb-control/blob/main/LICENSE" target="_blank" rel="noopener">MIT licence</a>
             </div>
-          </div>
-
-          <div class="about-section">
-            <h3>License</h3>
-            <p>MIT License — see <a href="https://github.com/JuicyLies/crumb-control/blob/main/LICENSE" target="_blank" rel="noopener">LICENSE</a></p>
           </div>
         </div>
       </section>

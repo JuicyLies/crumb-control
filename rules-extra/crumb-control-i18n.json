@@ -1,0 +1,332 @@
+{
+  "$schema": "https://raw.githubusercontent.com/cavi-au/Consent-O-Matic/master/rules.schema.json",
+  "_comment": "Crumb Control supplementary rules. Loaded AFTER the upstream Consent-O-Matic rules, so these only apply to CMPs upstream does not already cover (merge-rules.js keeps the first definition of any key). Focus: non-English / European banners, especially Italian, where upstream coverage is thin. Text matching is accent- and apostrophe-insensitive thanks to scripts/patch-matcher.js, so these entries deliberately list unaccented variants too.",
+
+  "iubendaExtended": {
+    "detectors": [
+      {
+        "presentMatcher": [
+          {
+            "type": "css",
+            "target": {
+              "selector": "#iubenda-cs-banner, .iubenda-cs-container, [class*='iubenda-cs-']"
+            }
+          }
+        ],
+        "showingMatcher": [
+          {
+            "type": "css",
+            "target": {
+              "selector": "#iubenda-cs-banner, .iubenda-cs-container",
+              "displayFilter": true
+            }
+          }
+        ]
+      }
+    ],
+    "methods": [
+      {
+        "name": "OPEN_OPTIONS",
+        "action": {
+          "type": "list",
+          "actions": [
+            {
+              "type": "click",
+              "target": {
+                "selector": ".iubenda-cs-customize-btn, .iubenda-cs-btn-primary",
+                "displayFilter": true
+              },
+              "optional": true
+            },
+            {
+              "type": "click",
+              "target": {
+                "selector": "#iubenda-cs-banner button, #iubenda-cs-banner a",
+                "textFilter": [
+                  "Personalizza",
+                  "Scopri di piu e personalizza",
+                  "Learn more and customize",
+                  "Customize",
+                  "Gestisci preferenze",
+                  "Impostazioni",
+                  "Personnaliser",
+                  "Anpassen",
+                  "Personalizar",
+                  "Instellingen"
+                ],
+                "displayFilter": true
+              },
+              "optional": true
+            }
+          ]
+        }
+      },
+      {
+        "name": "DO_CONSENT",
+        "action": {
+          "type": "list",
+          "actions": [
+            {
+              "type": "foreach",
+              "target": {
+                "selector": ".purposes-item, .iub-purpose-item",
+                "childFilter": {
+                  "target": {
+                    "selector": "label, .purpose-title",
+                    "textFilter": [
+                      "Interazioni e funzionalita semplici",
+                      "Basic interactions & functionalities",
+                      "Funzionalita",
+                      "Functionality",
+                      "Funktionalitat",
+                      "Fonctionnalites",
+                      "Funcionalidad"
+                    ]
+                  }
+                }
+              },
+              "action": {
+                "type": "consent",
+                "consents": [
+                  {
+                    "type": "A",
+                    "matcher": {
+                      "type": "checkbox",
+                      "target": { "selector": "input[type='checkbox']" }
+                    },
+                    "toggleAction": {
+                      "type": "click",
+                      "target": { "selector": "input[type='checkbox']" }
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "type": "foreach",
+              "target": {
+                "selector": ".purposes-item, .iub-purpose-item",
+                "childFilter": {
+                  "target": {
+                    "selector": "label, .purpose-title",
+                    "textFilter": [
+                      "Misurazione",
+                      "Measurement",
+                      "Mesure",
+                      "Messung",
+                      "Medicion",
+                      "Statistiche",
+                      "Statistics",
+                      "Analitici",
+                      "Analytics"
+                    ]
+                  }
+                }
+              },
+              "action": {
+                "type": "consent",
+                "consents": [
+                  {
+                    "type": "B",
+                    "matcher": {
+                      "type": "checkbox",
+                      "target": { "selector": "input[type='checkbox']" }
+                    },
+                    "toggleAction": {
+                      "type": "click",
+                      "target": { "selector": "input[type='checkbox']" }
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "type": "foreach",
+              "target": {
+                "selector": ".purposes-item, .iub-purpose-item",
+                "childFilter": {
+                  "target": {
+                    "selector": "label, .purpose-title",
+                    "textFilter": [
+                      "Miglioramento dell'esperienza",
+                      "Experience enhancement",
+                      "Esperienza",
+                      "Experience",
+                      "Erlebnis",
+                      "Experiencia"
+                    ]
+                  }
+                }
+              },
+              "action": {
+                "type": "consent",
+                "consents": [
+                  {
+                    "type": "E",
+                    "matcher": {
+                      "type": "checkbox",
+                      "target": { "selector": "input[type='checkbox']" }
+                    },
+                    "toggleAction": {
+                      "type": "click",
+                      "target": { "selector": "input[type='checkbox']" }
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "type": "foreach",
+              "target": {
+                "selector": ".purposes-item, .iub-purpose-item",
+                "childFilter": {
+                  "target": {
+                    "selector": "label, .purpose-title",
+                    "textFilter": [
+                      "Targeting e Pubblicita",
+                      "Pubblicita",
+                      "Targeting & Advertising",
+                      "Advertising",
+                      "Marketing",
+                      "Publicite",
+                      "Werbung",
+                      "Publicidad"
+                    ]
+                  }
+                }
+              },
+              "action": {
+                "type": "consent",
+                "consents": [
+                  {
+                    "type": "F",
+                    "matcher": {
+                      "type": "checkbox",
+                      "target": { "selector": "input[type='checkbox']" }
+                    },
+                    "toggleAction": {
+                      "type": "click",
+                      "target": { "selector": "input[type='checkbox']" }
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      },
+      {
+        "name": "SAVE_CONSENT",
+        "action": {
+          "type": "list",
+          "actions": [
+            {
+              "type": "click",
+              "target": {
+                "selector": "#iubFooterBtn, .iub-btn-save, .iubenda-cs-save-btn",
+                "displayFilter": true
+              },
+              "optional": true
+            },
+            {
+              "type": "click",
+              "target": {
+                "selector": "button, a.iubenda-cs-btn",
+                "textFilter": [
+                  "Salva e continua",
+                  "Salva le preferenze",
+                  "Salva",
+                  "Save and continue",
+                  "Save preferences",
+                  "Conferma",
+                  "Enregistrer",
+                  "Speichern",
+                  "Guardar",
+                  "Opslaan"
+                ],
+                "displayFilter": true
+              },
+              "optional": true
+            }
+          ]
+        }
+      }
+    ]
+  },
+
+  "genericEuropeanRejectBanner": {
+    "_comment": "Last-resort net for simple banners with an explicit reject/refuse button, in the major EU languages. Deliberately conservative: it requires a cookie/consent-ish container AND an unambiguous reject-style button, so it will not fire on arbitrary dialogs. Only reached when no upstream CMP rule matched.",
+    "detectors": [
+      {
+        "presentMatcher": [
+          {
+            "type": "css",
+            "target": {
+              "selector": "[id*='cookie' i][class*='banner' i], [class*='cookie-banner' i], [class*='cookie-consent' i], [id*='cookie-law' i], [class*='cookie-notice' i], [id*='cookieConsent' i]"
+            }
+          }
+        ],
+        "showingMatcher": [
+          {
+            "type": "css",
+            "target": {
+              "selector": "[id*='cookie' i][class*='banner' i], [class*='cookie-banner' i], [class*='cookie-consent' i], [id*='cookie-law' i], [class*='cookie-notice' i], [id*='cookieConsent' i]",
+              "displayFilter": true
+            }
+          }
+        ]
+      }
+    ],
+    "methods": [
+      {
+        "name": "DO_CONSENT",
+        "action": {
+          "type": "list",
+          "actions": []
+        }
+      },
+      {
+        "name": "SAVE_CONSENT",
+        "action": {
+          "type": "click",
+          "target": {
+            "selector": "button, a[role='button'], input[type='button'], input[type='submit']",
+            "textFilter": [
+              "Rifiuta tutto",
+              "Rifiuta tutti",
+              "Rifiuta",
+              "Continua senza accettare",
+              "Solo necessari",
+              "Solo i cookie necessari",
+              "Reject all",
+              "Reject",
+              "Decline all",
+              "Decline",
+              "Only necessary",
+              "Necessary only",
+              "Continue without accepting",
+              "Tout refuser",
+              "Refuser",
+              "Continuer sans accepter",
+              "Alle ablehnen",
+              "Ablehnen",
+              "Nur notwendige",
+              "Rechazar todo",
+              "Rechazar",
+              "Solo necesarias",
+              "Alles weigeren",
+              "Weigeren",
+              "Rejeitar tudo",
+              "Rejeitar",
+              "Avvis alle",
+              "Afvis alle",
+              "Neka alla",
+              "Odrzuc wszystko"
+            ],
+            "displayFilter": true
+          }
+        }
+      }
+    ]
+  }
+}

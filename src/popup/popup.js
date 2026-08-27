@@ -46,6 +46,7 @@ class Popup {
     await this.loadPolicy();
     await this.loadPreset();
     await this.loadDecisions();
+    await this.loadCounter();
     await this.loadAuditLog();
     await this.loadSiteOverrides();
     await this.loadStatistics();
@@ -108,20 +109,89 @@ class Popup {
     this.updateProtectionStatus(decisions);
   }
 
+  /**
+   * Lifetime count of banners handled. Stored locally in this browser only —
+   * nothing is transmitted anywhere.
+   */
+  async loadCounter() {
+    const response = await this.sendMessage({ type: 'GET_COUNTER' });
+    const counter = response?.counter || { total: 0, since: null };
+    const total = counter.total || 0;
+
+    document.getElementById('counterValue').textContent = total.toLocaleString();
+
+    const label = document.querySelector('.counter-label');
+    if (label) {
+      label.textContent = total === 1
+        ? 'cookie banner handled for you'
+        : 'cookie banners handled for you';
+    }
+
+    const sinceEl = document.getElementById('counterSince');
+    if (counter.since && total > 0) {
+      const since = new Date(counter.since).toLocaleDateString(undefined, {
+        month: 'short',
+        year: 'numeric'
+      });
+      sinceEl.textContent = `since ${since}`;
+    } else if (total === 0) {
+      sinceEl.textContent = 'browse a few sites and watch this climb';
+    } else {
+      sinceEl.textContent = '';
+    }
+  }
+
   renderDecisions(decisions) {
     const grid = document.getElementById('decisionsGrid');
     grid.innerHTML = '';
     for (const category of CATEGORY_ORDER) {
       const decision = decisions[category];
       if (!decision) continue;
-      const card = document.createElement('div');
-      card.className = 'decision-card';
-      card.innerHTML = `
+
+      const locked = category === 'necessary';
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = `decision-card${locked ? ' decision-locked' : ''}`;
+      btn.dataset.category = category;
+      btn.dataset.decision = decision;
+      btn.disabled = locked;
+      btn.title = locked
+        ? 'Necessary cookies are always allowed — sites break without them'
+        : `Click to ${decision === 'allow' ? 'reject' : 'allow'} ${CATEGORY_LABELS[category]} on ${this.hostname}`;
+      btn.setAttribute('aria-pressed', decision === 'allow' ? 'true' : 'false');
+      btn.innerHTML = `
         <span class="decision-name">${CATEGORY_LABELS[category] || category}</span>
         <span class="decision-value ${decision}">${decision.toUpperCase()}</span>
       `;
-      grid.appendChild(card);
+
+      if (!locked) {
+        btn.addEventListener('click', () => this.toggleDecision(category, decision));
+      }
+      grid.appendChild(btn);
     }
+  }
+
+  /**
+   * Flip a single category for the CURRENT SITE only, via a site override.
+   * Global settings stay untouched — this is a per-site decision.
+   */
+  async toggleDecision(category, currentDecision) {
+    if (category === 'necessary') return;
+    if (!this.hostname) return;
+
+    const next = currentDecision === 'allow' ? 'reject' : 'allow';
+
+    this.policyEngine.setSiteOverride(this.hostname, category, next);
+    await this.persistPolicy(this.currentPreset);
+    await this.sendMessage({
+      type: 'SET_SITE_OVERRIDE',
+      site: this.hostname,
+      category,
+      decision: next
+    });
+
+    await this.loadDecisions();
+    await this.loadSiteOverrides();
   }
 
   updateProtectionStatus(decisions) {
@@ -249,10 +319,6 @@ class Popup {
   // ============ Settings tab ============
 
   setupSettingsTab() {
-    document.querySelectorAll('.preset-btn').forEach(btn => {
-      btn.addEventListener('click', () => this.selectPreset(btn.dataset.preset));
-    });
-
     document.querySelectorAll('#customToggles input[data-cat]').forEach(input => {
       input.addEventListener('change', () => this.onCustomToggleChange());
     });
@@ -294,15 +360,11 @@ class Popup {
   }
 
   async loadPreset() {
+    // Presets were removed from the UI in v0.4.0 — the category toggles are the
+    // single source of truth now. We still read the stored value so existing
+    // installs keep whatever they had until the user next flips a toggle.
     const response = await this.sendMessage({ type: 'GET_PRESET' });
-    this.currentPreset = response?.preset || 'essential';
-    this.renderPresetSelection();
-  }
-
-  renderPresetSelection() {
-    document.querySelectorAll('.preset-btn').forEach(btn => {
-      btn.classList.toggle('active', btn.dataset.preset === this.currentPreset);
-    });
+    this.currentPreset = response?.preset || 'custom';
     this.renderToggles();
   }
 
@@ -322,32 +384,12 @@ class Popup {
     label.classList.toggle('on', isOn);
   }
 
-  async selectPreset(preset) {
-    this.currentPreset = preset;
-
-    if (preset === 'custom') {
-      // "Custom" just labels whatever the toggles already say — no decisions change.
-      this.renderPresetSelection();
-      await this.persistPolicy('custom');
-      return;
-    }
-
-    await this.sendMessage({ type: 'SET_PRESET', preset });
-    await this.loadPolicy();
-    this.renderPresetSelection();
-    await this.loadDecisions();
-  }
-
   async onCustomToggleChange() {
     document.querySelectorAll('#customToggles input[data-cat]').forEach(input => {
       this.policyEngine.setGlobalDefault(input.dataset.cat, input.checked ? 'allow' : 'reject');
       this.updateToggleStateLabel(input.dataset.cat, input.checked);
     });
-    // Any manual flip means the active preset no longer matches Essential/Balanced/Allow all.
     this.currentPreset = 'custom';
-    document.querySelectorAll('.preset-btn').forEach(btn => {
-      btn.classList.toggle('active', btn.dataset.preset === 'custom');
-    });
     await this.persistPolicy('custom');
     this.updatePolicyEditor();
     await this.loadDecisions();
@@ -403,7 +445,7 @@ class Popup {
     await this.sendMessage({ type: 'SET_PRESET', preset: 'essential' });
     await this.loadPolicy();
     this.currentPreset = 'essential';
-    this.renderPresetSelection();
+    this.renderToggles();
     await this.loadDecisions();
   }
 
@@ -419,7 +461,7 @@ class Popup {
       }
       await this.persistPolicy('custom');
       this.currentPreset = 'custom';
-      this.renderPresetSelection();
+      this.renderToggles();
       this.validatePolicy();
       await this.loadDecisions();
     } catch (e) {

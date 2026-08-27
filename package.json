@@ -1,6 +1,6 @@
 {
   "name": "crumb-control",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Crumb Control - MV3 browser extension for unified consent management",
   "license": "MIT",
   "repository": {
@@ -8,8 +8,8 @@
     "url": "https://github.com/JuicyLies/crumb-control"
   },
   "scripts": {
-    "build:chrome": "npm run merge-rules && webpack --env target=chrome --mode production && npm run verify:chrome",
-    "build:firefox": "npm run merge-rules && webpack --env target=firefox --mode production && npm run verify:firefox",
+    "build:chrome": "npm run prepare-rules && webpack --env target=chrome --mode production && npm run verify:chrome",
+    "build:firefox": "npm run prepare-rules && webpack --env target=firefox --mode production && npm run verify:firefox",
     "build:safari": "webpack --env target=safari --mode production",
     "build": "npm run build:chrome && npm run build:firefox",
     "verify:chrome": "node scripts/verify-build.js dist/chrome",
@@ -19,6 +19,9 @@
     "dev:firefox": "webpack --env target=firefox --mode development --watch",
     "lint": "eslint src/",
     "test": "jest",
+    "test:matcher": "node scripts/test-matcher.js",
+    "patch-matcher": "node scripts/patch-matcher.js",
+    "prepare-rules": "npm run patch-matcher && npm run merge-rules",
     "merge-rules": "node scripts/merge-rules.js"
   },
   "dependencies": {

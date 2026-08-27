@@ -45,7 +45,9 @@ Then the lobbying started:
 | Feature | What it means |
 |---|---|
 | 🍪 **Auto-clicks cookie banners** | You never see them. The add-on picks the buttons for you based on what you told it. |
+| 🌍 **Works in your language** | Accent- and punctuation-tolerant matching, so Italian, French, German and Spanish banners work too |
 | 🎛️ **You choose the rules** | "Reject tracking everywhere. Allow analytics on Wikipedia only." Whatever you want. |
+| 🔢 **Counts what it's saved you** | A running tally of banners handled — stored locally, never sent anywhere |
 | 📡 **Sends a "don't track me" signal** | A universal opt-out signal called Global Privacy Control. Some laws (California) legally require sites to obey it. |
 | 📋 **Keeps a log** | Every decision it made — which site, what it clicked, when. Download it as a file any time. |
 | 🔒 **Sync across your devices (optional)** | Your settings can follow you between laptop and desktop. Encrypted end-to-end. Off by default. |
@@ -62,7 +64,7 @@ Once the store review is done, you'll click **Add to Chrome** and that's it. Wat
 
 ### Option 2: Download and drop in
 1. Grab the latest release from the [Releases page](https://github.com/JuicyLies/crumb-control/releases)
-2. Download `udp-chrome-v0.1.0.zip` (or `udp-firefox-v0.1.0.zip`)
+2. Download `udp-chrome-v0.4.0.zip` (or `udp-firefox-v0.4.0.zip`)
 3. **Unzip it** somewhere
 4. In Chrome: open `chrome://extensions`, flip the **Developer mode** switch (top right), click **Load unpacked**, pick the unzipped folder
 5. In Firefox: open `about:debugging#/runtime/this-firefox`, click **Load Temporary Add-on**, pick any file inside the unzipped folder
@@ -81,6 +83,10 @@ Then load `dist/chrome/` (or `dist/firefox/`) as an unpacked extension.
 
 **Need:** Node.js 18 or newer.
 
+**A note on the build:** `Consent-O-Matic` is a git submodule, so we can't edit it directly without changes being lost on the next submodule update. `scripts/patch-matcher.js` re-applies our language-tolerant text matching to `Tools.js` at build time. It's idempotent and runs automatically via `npm run prepare-rules`. If upstream restructures `Tools.findElement()`, the patch fails loudly rather than silently producing a broken build.
+
+Run `npm run test:matcher` to verify the normalisation logic against the real-world non-English cases it's designed to fix.
+
 ---
 
 ## How to actually use it
@@ -89,23 +95,44 @@ Once installed, click the Crumb Control icon in your browser toolbar. Everything
 
 | Tab | What it does |
 |---|---|
-| **Status** | What happened on the current site — whether a banner was found, recognised and handled |
+| **Status** | What happened on the current site, your lifetime banner count, and your consent decisions |
 | **Log** | Recent activity across sites, so you can check it's doing its job |
-| **Settings** | Pick a preset, or flip individual categories |
+| **Settings** | Flip individual cookie categories |
 | **About** | Version, credits and links |
 
 ### Choosing what gets blocked
 
-Pick a preset and you're done:
+Flip the categories you want. The categories are **necessary**, **preferences**, **analytics**, **marketing**, **social** and **unclassified**. `necessary` is locked on, because switching it off breaks sites. Changes save instantly — there's no Save button.
 
-- **Essential only** — reject everything except cookies the site genuinely needs to function *(default)*
-- **Balanced** — allow preferences, reject tracking and marketing
-- **Allow all** — accept everything
-- **Custom** — flip individual categories yourself
+By default everything except `necessary` is rejected, which is the safest starting point.
 
-The categories are **necessary**, **preferences**, **analytics**, **marketing**, **social** and **unclassified**. `necessary` is locked on, because switching it off breaks sites. Flip any other toggle and the preset switches to Custom automatically — changes save instantly, there's no Save button.
+### Changing your mind on one site
+
+On the **Status** tab, every consent decision is a button. Tap one to flip it between ALLOW and REJECT **for that site only** — your global settings stay untouched. Useful when a site genuinely needs analytics to work properly.
+
+### The counter
+
+The Status tab shows how many cookie banners Crumb Control has handled for you since install. It's stored locally in your browser and is never transmitted anywhere.
 
 When a banner is handled, a small confirmation appears in the corner of the page for a few seconds so you know it worked. You can turn that off in Settings.
+
+---
+
+## Non-English sites
+
+Cookie banners aren't written in English on most of the web, and naive text matching breaks the moment it meets an accent.
+
+Crumb Control normalises text on both sides before matching:
+
+- **Accents are stripped** — `Funzionalità` matches `Funzionalita`, `bestätigen` matches `bestatigen`
+- **Curly apostrophes are unified** — `Miglioramento dell’esperienza` matches `dell'esperienza`. This one mattered: the bundled Italian rules ship with a curly `’` (U+2019), and any site rendering a straight `'` silently failed to match.
+- **Odd whitespace is collapsed** — non-breaking spaces are common in European layouts and never equal a plain space
+
+This applies to all 679 text matchers across the ruleset, so it improves Italian, French, German, Spanish, Portuguese, Dutch and Nordic sites at once — not just one locale.
+
+There's also a supplementary ruleset in [`rules-extra/`](rules-extra/) adding broader Iubenda coverage (the dominant CMP on Italian sites) and a conservative multilingual fallback for simple reject-style banners.
+
+**Still not perfect.** Some banners use custom in-house CMPs with no rule anywhere. When Crumb Control can't confidently identify a banner it leaves it alone rather than clicking blind — guessing wrong on a consent dialog is worse than doing nothing. If you hit one, use **Report broken cookie banner** on the Status tab.
 
 ---
 
@@ -155,6 +182,8 @@ Important, so we're clear:
 |---|:---:|:---:|:---:|
 | Makes banners disappear | ✅ | ✅ | ✅ |
 | Lets you choose what to reject | ❌ | ✅ | ✅ |
+| Handles accented / non-English banners | partial | partial | ✅ |
+| Per-site decisions in one tap | ❌ | ❌ | ✅ |
 | Portable settings file | ❌ | ❌ | ✅ |
 | Different rules for different sites | ❌ | on/off only | ✅ |
 | Sends the Global Privacy Control signal | ❌ | ❌ | ✅ |

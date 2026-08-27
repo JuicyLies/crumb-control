@@ -8,7 +8,8 @@ const STORAGE_KEYS = {
   AUDIT_LOG: 'udp_audit_log',
   SYNC_CONFIG: 'udp_sync_config',
   STATISTICS: 'udp_statistics',
-  PRESET: 'udp_preset'
+  PRESET: 'udp_preset',
+  COUNTER: 'udp_banner_counter'
 };
 
 const AUDIT_LOG_MAX_ENTRIES = 10000;
@@ -46,6 +47,9 @@ class BackgroundService {
     this.policyEngine = new PolicyEngine();
     this.auditBuffer = [];
     this.statisticsBuffer = { clicks: 0, cmps: {}, sites: {} };
+    // Guards against double-counting: Consent-O-Matic's "HandledCMP" string
+    // message and content.js's LOG_AUDIT can both fire for the same banner.
+    this.recentHandled = new Map();
     this.init();
   }
 
@@ -227,6 +231,9 @@ class BackgroundService {
       case 'GET_STATISTICS':
         return { statistics: await this.getStatistics() };
 
+      case 'GET_COUNTER':
+        return { counter: await this.getCounter() };
+
       default:
         return { error: 'Unknown message type' };
     }
@@ -287,9 +294,53 @@ class BackgroundService {
       this.statisticsBuffer.sites[entry.site] = (this.statisticsBuffer.sites[entry.site] || 0) + 1;
     }
 
+    // Lifetime "banners handled" counter — local only, never leaves the browser.
+    if (entry.success) {
+      this.incrementCounter(entry.site, entry.cmp);
+    }
+
     if (this.auditBuffer.length >= 100) {
       this.flushAudit();
     }
+  }
+
+  /**
+   * Bump the lifetime counter, de-duplicating repeat signals for the same
+   * site+CMP within a short window so one banner only ever counts once.
+   */
+  async incrementCounter(site, cmp) {
+    const key = `${site || '?'}|${cmp || '?'}`;
+    const now = Date.now();
+
+    const last = this.recentHandled.get(key);
+    if (last && (now - last) < 5000) return;
+    this.recentHandled.set(key, now);
+
+    // Keep the dedupe map from growing unbounded.
+    if (this.recentHandled.size > 200) {
+      for (const [k, t] of this.recentHandled) {
+        if (now - t > 60000) this.recentHandled.delete(k);
+      }
+    }
+
+    try {
+      const stored = await chrome.storage.local.get({
+        [STORAGE_KEYS.COUNTER]: { total: 0, since: now }
+      });
+      const counter = stored[STORAGE_KEYS.COUNTER];
+      counter.total = (counter.total || 0) + 1;
+      if (!counter.since) counter.since = now;
+      await chrome.storage.local.set({ [STORAGE_KEYS.COUNTER]: counter });
+    } catch (e) {
+      console.warn('[UDP] Counter increment failed:', e.message);
+    }
+  }
+
+  async getCounter() {
+    const stored = await chrome.storage.local.get({
+      [STORAGE_KEYS.COUNTER]: { total: 0, since: null }
+    });
+    return stored[STORAGE_KEYS.COUNTER];
   }
 
   async flushAudit() {

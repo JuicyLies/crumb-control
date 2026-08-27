@@ -10,13 +10,6 @@ let udpSiteHost = '';
 let udpIsThirdParty = false;
 let udpToastShown = false;
 
-const UDP_PRESET_LABELS = {
-  essential: 'Essential only',
-  balanced: 'Balanced',
-  allowAll: 'Allow all',
-  custom: 'Custom'
-};
-
 // Small bronze/black confirmation card, shown only when a banner was actually
 // handled. Shadow DOM keeps page CSS from touching it (and vice versa).
 async function showUdpConfirmationToast(presetLabel) {
@@ -101,7 +94,7 @@ async function showUdpConfirmationToast(presetLabel) {
     </span>
     <span class="udp-toast-text">
       <span class="udp-toast-title">Cookie preferences set</span>
-      <span class="udp-toast-sub">${presetLabel} applied</span>
+      <span class="udp-toast-sub">${presetLabel}</span>
     </span>
   `;
 
@@ -187,11 +180,8 @@ async function contentScriptRunner() {
   // Get OUR consent values from policy engine
   const consentTypes = getUDPConsentValues();
 
-  // Preset label used by the confirmation toast (see handledCallback below).
-  const presetInfo = await new Promise((resolve) => {
-    chrome.runtime.sendMessage({ type: 'GET_PRESET' }, (response) => resolve(response || {}));
-  });
-  const presetLabel = UDP_PRESET_LABELS[presetInfo.preset] || 'Your settings';
+  // Subtitle for the confirmation toast (see handledCallback below).
+  const presetLabel = 'Your preferences applied';
 
   if (debugValues.debugLog) {
     console.log("[UDP] Fetched rules:", fetchedRules.length, "rule sets");
