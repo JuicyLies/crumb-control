@@ -1,6 +1,6 @@
 {
   "name": "Crumb Control",
-  "description": "Automatic cookie consent handling, GPC signal, and a local privacy policy engine — no accounts, no cloud, no tracking.",
+  "description": "Automatic cookie consent handling, GPC signal, and a local privacy policy engine \u2014 no accounts, no cloud, no tracking.",
   "version": "0.4.0",
   "manifest_version": 3,
   "author": "Daniel Milanesi",
@@ -9,7 +9,6 @@
     "storage",
     "activeTab",
     "tabs",
-    "scripting",
     "declarativeNetRequest",
     "declarativeNetRequestWithHostAccess"
   ],

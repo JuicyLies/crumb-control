@@ -1,0 +1,32 @@
+name: Feature request
+description: Suggest an idea
+title: "[Feature] "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem does this solve?
+      description: Describe the frustration, not just the solution you have in mind.
+      placeholder: When I visit a site in a language I don't read, I can't tell what was accepted...
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: What would you like to see?
+    validations:
+      required: true
+
+  - type: markdown
+    attributes:
+      value: |
+        **Worth knowing — things that are deliberately out of scope:**
+
+        - Paywall bypassing
+        - Faking or falsifying consent
+        - Blocking strictly-necessary cookies
+        - User accounts or a cloud backend (this extension has no server and won't get one)
+
+        Requests along those lines will be closed. Everything else is fair game.

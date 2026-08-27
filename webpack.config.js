@@ -43,30 +43,28 @@ module.exports = (env, argv) => {
     { from: 'src/rules/', to: 'rules/', noErrorOnMissing: true },
     // Our source files (will be bundled by webpack entry points)
     { from: 'src/shared/', to: 'shared/', noErrorOnMissing: true },
-    // Assets
-    { from: 'src/assets/', to: 'assets/', noErrorOnMissing: true },
+    // Assets — icon_1024 is master artwork for store listings, not shipped
+    {
+      from: 'src/assets/',
+      to: 'assets/',
+      globOptions: { ignore: ['**/icon_1024.png'] },
+      noErrorOnMissing: true
+    },
     // MIT compliance: the built extension bundles Consent-O-Matic source, so the
     // upstream copyright notice must ship inside the distributed artifact too.
     { from: 'LICENSE', to: 'LICENSE', toType: 'file', noErrorOnMissing: true },
     { from: path.join(consentOMaticSrc, '..', 'LICENSE'), to: 'THIRD_PARTY_LICENSES/Consent-O-Matic-LICENSE', toType: 'file', noErrorOnMissing: true },
-    // Consent-O-Matic rule database (377KB, 500+ CMPs) - lives in submodule root, not Extension/
+    // Consent-O-Matic rule database — the ONLY upstream artifact needed at runtime.
+    // Declared in web_accessible_resources and fetched by the background service.
     { from: path.resolve(__dirname, 'Consent-O-Matic/BundledRules.json'), to: 'Rules.json', noErrorOnMissing: false },
-    { from: path.resolve(__dirname, 'Consent-O-Matic/rules-list.json'), to: 'rules-list.json', noErrorOnMissing: true },
-    { from: path.resolve(__dirname, 'Consent-O-Matic/rules.schema.json'), to: 'rules.schema.json', noErrorOnMissing: true },
-    // Copy Consent-O-Matic JS modules (ES modules, loaded by content script)
-    { from: path.join(consentOMaticSrc, '*.js'), to: '', noErrorOnMissing: true },
-    // Copy remaining non-JS Consent-O-Matic files
-    { 
-      from: consentOMaticSrc, 
-      to: '', 
-      globOptions: {
-        ignore: ['**/*.js', '**/*.html', '**/*.scss', '**/*.css', '**/icons/**', '**/editor/**', '**/Rules.json', '**/rules-list.json', '**/rules.schema.json', '**/manifest*.json', '**/webpack.config.js', '**/package*.json', '**/LICENSE', '**/README.md', '**/.gitignore', '**/.vscode/**']
-      },
-      noErrorOnMissing: true
-    },
-    { from: path.join(consentOMaticSrc, 'icons/'), to: 'icons/', noErrorOnMissing: true },
-    { from: path.join(consentOMaticSrc, 'editor/'), to: 'editor/', noErrorOnMissing: true },
   ];
+
+  // NOTE: we deliberately do NOT copy the Consent-O-Matic Extension/ sources,
+  // editor/, icons/, rules-list.json or rules.schema.json into the build.
+  // webpack bundles ConsentEngine and its dependencies directly into content.js,
+  // and the manifest loads only content.js + Rules.json. Shipping the raw sources
+  // added ~200KB of dead weight and gave store reviewers unused code to query.
+  // Verify with: grep -o '"js":\[[^]]*\]' dist/chrome/manifest.json
   
   // Firefox-specific: need to copy manifest.firefox.json as manifest.json
   if (isFirefox) {

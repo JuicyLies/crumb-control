@@ -1,0 +1,88 @@
+name: Cookie banner not handled
+description: A cookie banner wasn't dismissed, or was handled incorrectly
+title: "[CMP] "
+labels: ["cmp-rule", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting. Missing banners are the single most useful thing you can tell us — each report improves coverage for everyone.
+
+        **Please include the website URL.** We can't write a rule for a banner we can't reproduce.
+
+  - type: input
+    id: site
+    attributes:
+      label: Website
+      description: The full URL where the banner appeared
+      placeholder: https://www.example.it/some-article
+    validations:
+      required: true
+
+  - type: dropdown
+    id: what-happened
+    attributes:
+      label: What happened?
+      options:
+        - Banner was completely ignored (still visible)
+        - Banner was partly handled (dialog opened but never closed)
+        - Wrong choice was made (it accepted when I wanted reject)
+        - Banner was dismissed but the site broke afterwards
+        - Something else
+    validations:
+      required: true
+
+  - type: input
+    id: language
+    attributes:
+      label: What language is the banner in?
+      description: Helps us spot patterns — non-English banners are a known weak spot
+      placeholder: Italian
+    validations:
+      required: false
+
+  - type: textarea
+    id: details
+    attributes:
+      label: Anything else?
+      description: |
+        Optional but very helpful:
+        - The exact text on the reject/accept buttons
+        - A screenshot of the banner
+        - Whether it happens every time or only sometimes
+      placeholder: The reject button says "Rifiuta tutto" and sits below the fold...
+    validations:
+      required: false
+
+  - type: dropdown
+    id: browser
+    attributes:
+      label: Browser
+      options:
+        - Chrome
+        - Firefox
+        - Edge
+        - Brave
+        - Opera
+        - Other
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: Crumb Control version
+      description: Shown at the top of the About tab
+      placeholder: "0.4.0"
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before submitting
+      options:
+        - label: I checked that the extension is enabled on this site (Status tab)
+          required: true
+        - label: I searched existing issues for this website
+          required: false

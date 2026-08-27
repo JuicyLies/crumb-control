@@ -18,7 +18,7 @@
     "dev:chrome": "webpack --env target=chrome --mode development --watch",
     "dev:firefox": "webpack --env target=firefox --mode development --watch",
     "lint": "eslint src/",
-    "test": "jest",
+    "test": "node node_modules/jest/bin/jest.js --passWithNoTests && npm run test:matcher",
     "test:matcher": "node scripts/test-matcher.js",
     "patch-matcher": "node scripts/patch-matcher.js",
     "prepare-rules": "npm run patch-matcher && npm run merge-rules",
