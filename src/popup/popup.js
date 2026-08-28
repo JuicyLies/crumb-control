@@ -47,6 +47,7 @@ class Popup {
     await this.loadPreset();
     await this.loadDecisions();
     await this.loadCounter();
+    await this.loadTrackers();
     await this.loadAuditLog();
     await this.loadSiteOverrides();
     await this.loadStatistics();
@@ -113,6 +114,46 @@ class Popup {
    * Lifetime count of banners handled. Stored locally in this browser only —
    * nothing is transmitted anywhere.
    */
+  async loadTrackers() {
+    const card = document.getElementById('trackerCard');
+    if (!card) return;
+
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    if (!tab?.id) { card.hidden = true; return; }
+
+    const response = await this.sendMessage({ type: 'GET_TRACKERS', tabId: tab.id });
+    const trackers = response?.trackers;
+
+    // Nothing observed yet, or a clean page: say nothing rather than
+    // showing a scary empty card.
+    if (!trackers || !trackers.total) { card.hidden = true; return; }
+
+    card.hidden = false;
+    document.getElementById('trackerValue').textContent = trackers.total;
+
+    const label = card.querySelector('.tracker-label');
+    if (label) {
+      label.textContent = trackers.total === 1
+        ? 'third-party tracker on this page'
+        : 'third-party trackers on this page';
+    }
+
+    const cats = document.getElementById('trackerCats');
+    cats.innerHTML = '';
+    const NAMES = {
+      advertising: 'advertising',
+      analytics: 'analytics',
+      social: 'social',
+      fingerprinting: 'fingerprinting'
+    };
+    for (const [key, count] of Object.entries(trackers.byCategory || {})) {
+      const chip = document.createElement('span');
+      chip.className = 'tracker-cat';
+      chip.textContent = `${count} ${NAMES[key] || key}`;
+      cats.appendChild(chip);
+    }
+  }
+
   async loadCounter() {
     const response = await this.sendMessage({ type: 'GET_COUNTER' });
     const counter = response?.counter || { total: 0, since: null };

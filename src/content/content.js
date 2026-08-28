@@ -4,6 +4,7 @@
 import { PolicyEngine, CONSENT_CATEGORIES, CONSENT_DECISIONS } from '../shared/PolicyEngine.js';
 import ConsentEngine from '../../Consent-O-Matic/Extension/ConsentEngine.js';
 import GDPRConfig from './GDPRConfig.js';
+import { watchForTrackers } from './TrackerDetector.js';
 
 let udpPolicyEngine = null;
 let udpSiteHost = '';
@@ -277,6 +278,25 @@ if (document.readyState === "loading") {
   document.addEventListener("DOMContentLoaded", contentScriptRunner);
 } else {
   contentScriptRunner();
+}
+
+// Observe which third-party trackers this page loads, and tell the popup.
+// This is observation only — we do not block anything, and the data never
+// leaves the browser. See TrackerDetector.js for why we don't say "blocked".
+if (window.top === window) {
+  watchForTrackers((result) => {
+    try {
+      chrome.runtime.sendMessage({
+        type: 'REPORT_TRACKERS',
+        total: result.total,
+        byCategory: result.byCategory,
+        domains: result.domains,
+        site: location.hostname
+      });
+    } catch (e) {
+      // Extension context can go away on reload; nothing to do.
+    }
+  });
 }
 
 // Expose UDP API

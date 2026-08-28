@@ -50,6 +50,10 @@ class BackgroundService {
     // Guards against double-counting: Consent-O-Matic's "HandledCMP" string
     // message and content.js's LOG_AUDIT can both fire for the same banner.
     this.recentHandled = new Map();
+    // Per-tab tracker observations. In-memory only: cleared when the tab
+    // closes, never written to storage, never leaves the browser.
+    this.trackersByTab = new Map();
+    chrome.tabs.onRemoved.addListener((tabId) => this.trackersByTab.delete(tabId));
     this.init();
   }
 
@@ -233,6 +237,26 @@ class BackgroundService {
 
       case 'GET_COUNTER':
         return { counter: await this.getCounter() };
+
+      case 'REPORT_TRACKERS': {
+        // Content script observed which third-party trackers a page loaded.
+        // Stored per-tab in memory only — never persisted, never sent anywhere.
+        const tabId = sender?.tab?.id;
+        if (tabId != null) {
+          this.trackersByTab.set(tabId, {
+            total: message.total || 0,
+            byCategory: message.byCategory || {},
+            domains: message.domains || [],
+            site: message.site || ''
+          });
+        }
+        return { ok: true };
+      }
+
+      case 'GET_TRACKERS': {
+        const tabId = message.tabId;
+        return { trackers: this.trackersByTab.get(tabId) || null };
+      }
 
       default:
         return { error: 'Unknown message type' };

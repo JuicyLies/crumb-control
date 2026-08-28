@@ -155,7 +155,7 @@ What we've added on top:
 | **Audit log** with JSON/DSR export | ❌ | ✅ |
 | **No phone-home** (report button → GitHub issue) | posts to their server | ✅ |
 
-The language fix wasn't just for us — we [upstreamed it](https://github.com/cavi-au/Consent-O-Matic/pull/NEW_PR_NUMBER) so every Consent-O-Matic user benefits. It fixes the root cause behind 679 `textFilter` matchers that silently failed on non-English banners.
+The language fix wasn't just for us — we [upstreamed it](https://github.com/cavi-au/Consent-O-Matic/pull/597) so every Consent-O-Matic user benefits. It fixes the root cause behind 679 `textFilter` matchers that silently failed on non-English banners.
 
 ---
 

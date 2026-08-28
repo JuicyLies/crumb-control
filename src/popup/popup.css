@@ -232,6 +232,52 @@ body {
   margin-top: 2px;
 }
 
+/* Tracker observation card. Deliberately styled as a warning, not a boast:
+   we did not block these, we noticed them. */
+.tracker-card {
+  margin-bottom: 11px;
+  padding: 9px 11px;
+  border: 1px solid rgba(200, 90, 60, 0.32);
+  border-radius: var(--radius);
+  background: linear-gradient(135deg, rgba(200, 90, 60, 0.11), rgba(200, 90, 60, 0.04));
+}
+
+.tracker-head {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+}
+
+.tracker-value {
+  font-size: 19px;
+  font-weight: 700;
+  color: #e0805f;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.tracker-label {
+  font-size: 10px;
+  color: var(--text-dim);
+  line-height: 1.25;
+}
+
+.tracker-cats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 7px;
+}
+
+.tracker-cat {
+  font-size: 9px;
+  padding: 2px 6px;
+  border-radius: 20px;
+  background: rgba(200, 90, 60, 0.16);
+  color: #d99070;
+  white-space: nowrap;
+}
+
 .decisions-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
