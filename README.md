@@ -140,6 +140,25 @@ There's also a supplementary ruleset in [`rules-extra/`](rules-extra/) adding br
 
 ---
 
+## What we add to Consent-O-Matic
+
+This project is **built on Consent-O-Matic** — the Aarhus University open-source engine that powers the cookie-banner detection and maintains the community rule corpus (209 CMPs bundled here). We don't hide that; it's the foundation.
+
+What we've added on top:
+
+| Feature | Consent-O-Matic | Crumb Control |
+|---|:---:|:---:|
+| **Global Privacy Control header** (`Sec-GPC: 1`) | ❌ | ✅ |
+| **Per-category site overrides** (not just on/off) | ❌ | ✅ |
+| **Language-tolerant matching** (accents, curly apostrophes, NBSP) | ❌ | ✅ |
+| **Compact popup** — one-tap decisions, no options page | options page | ✅ |
+| **Audit log** with JSON/DSR export | ❌ | ✅ |
+| **No phone-home** (report button → GitHub issue) | posts to their server | ✅ |
+
+The language fix wasn't just for us — we [upstreamed it](https://github.com/cavi-au/Consent-O-Matic/pull/NEW_PR_NUMBER) so every Consent-O-Matic user benefits. It fixes the root cause behind 679 `textFilter` matchers that silently failed on non-English banners.
+
+---
+
 ## Browser support
 
 | Browser | Status |
@@ -177,24 +196,6 @@ Important, so we're clear:
 - ❌ **It doesn't break "strictly necessary" cookies.** Sites need those to log you in, remember your cart, etc. Those stay on.
 - ❌ **It's not magic.** Some cookie banners it doesn't recognise yet. Those it leaves alone (safer than guessing wrong).
 - ❌ **It's not legal advice.** Sending a signal doesn't force a site to obey it, especially outside the EU/California.
-
----
-
-## Compared to what's already out there
-
-| | I Don't Care About Cookies | Consent-O-Matic | **This add-on** |
-|---|:---:|:---:|:---:|
-| Makes banners disappear | ✅ | ✅ | ✅ |
-| Lets you choose what to reject | ❌ | ✅ | ✅ |
-| Handles accented / non-English banners | partial | partial | ✅ |
-| Per-site decisions in one tap | ❌ | ❌ | ✅ |
-| Portable settings file | ❌ | ❌ | ✅ |
-| Different rules for different sites | ❌ | on/off only | ✅ |
-| Sends the Global Privacy Control signal | ❌ | ❌ | ✅ |
-| Keeps a searchable log | ❌ | ❌ | ✅ |
-| Encrypted sync across devices | ❌ | ❌ | via browser |
-
-**Credit where it's due:** this is built on top of [Consent-O-Matic](https://github.com/cavi-au/Consent-O-Matic) (Aarhus University, MIT licensed). They wrote the cookie-banner detection engine and maintain the community rule corpus. This project bundles 209 CMP rules and adds the preferences layer, privacy signal, language-tolerant matching and simplified UI on top.
 
 ---
 
