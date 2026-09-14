@@ -1,7 +1,7 @@
 {
   "name": "Crumb Control",
-  "description": "Automatic cookie consent handling, GPC signal, and a local privacy policy engine \u2014 no accounts, no cloud, no tracking.",
-  "version": "0.4.0",
+  "description": "Automatic cookie consent handling, GPC signal, and a private policy engine — no account, backend, telemetry, or tracking.",
+  "version": "0.4.1",
   "manifest_version": 3,
   "author": "Daniel Milanesi",
   "homepage_url": "https://github.com/JuicyLies/crumb-control",

@@ -1,3 +1,5 @@
+import { load as loadYAML } from 'js-yaml';
+
 // PolicyEngine.js - Core policy engine for Crumb Control
 // Handles YAML/JSON policy parsing, site-scoped overrides, and consent decision making
 
@@ -18,9 +20,8 @@ export const CONSENT_DECISIONS = {
 
 export class PolicyEngine {
   constructor(policy = null) {
-    this.policy = policy || this.getDefaultPolicy();
     this.compiledRules = null;
-    this.compilePolicy();
+    this.load(policy || this.getDefaultPolicy());
   }
 
   getDefaultPolicy() {
@@ -77,6 +78,7 @@ export class PolicyEngine {
    * @returns {string} - One of CONSENT_DECISIONS
    */
   getDecision(category, site, isThirdParty = false) {
+    if (category === CONSENT_CATEGORIES.NECESSARY) return CONSENT_DECISIONS.ALLOW;
     // 1. Check site-specific override
     if (this.compiledRules.sites[site] && this.compiledRules.sites[site][category] !== undefined) {
       return this.compiledRules.sites[site][category];
@@ -97,10 +99,10 @@ export class PolicyEngine {
    * @param {string} site - Hostname
    * @returns {Object} - Map of category -> decision
    */
-  getAllDecisions(site) {
+  getAllDecisions(site, isThirdParty = false) {
     const decisions = {};
     for (const category of Object.values(CONSENT_CATEGORIES)) {
-      decisions[category] = this.getDecision(category, site, false);
+      decisions[category] = this.getDecision(category, site, isThirdParty);
     }
     return decisions;
   }
@@ -170,22 +172,29 @@ export class PolicyEngine {
    * @param {Object} policy
    */
   load(policy) {
-    this.policy = { ...this.getDefaultPolicy(), ...policy };
-    // Deep merge sites and context
-    if (policy.sites) {
-      this.policy.sites = { ...this.getDefaultPolicy().sites, ...policy.sites };
+    if (!policy || typeof policy !== 'object' || Array.isArray(policy)) {
+      throw new Error('Policy must be an object');
     }
-    if (policy.context) {
-      this.policy.context = {
-        firstParty: { ...this.getDefaultPolicy().context.firstParty, ...policy.context.firstParty },
-        thirdParty: { ...this.getDefaultPolicy().context.thirdParty, ...policy.context.thirdParty }
-      };
-    }
-    if (policy.gpc) {
-      this.policy.gpc = { ...this.getDefaultPolicy().gpc, ...policy.gpc };
-    }
-    if (policy.topicsApi) {
-      this.policy.topicsApi = { ...this.getDefaultPolicy().topicsApi, ...policy.topicsApi };
+    const defaults = this.getDefaultPolicy();
+    const candidate = {
+      ...defaults, ...policy,
+      global: { ...defaults.global, ...policy.global },
+      sites: { ...policy.sites },
+      context: {
+        firstParty: { ...policy.context?.firstParty },
+        thirdParty: { ...policy.context?.thirdParty }
+      },
+      gpc: { ...defaults.gpc, ...policy.gpc },
+      topicsApi: { ...defaults.topicsApi, ...policy.topicsApi }
+    };
+    const previous = this.policy;
+    this.policy = candidate;
+    let validation;
+    try { validation = this.validate(); }
+    catch (error) { this.policy = previous; throw error; }
+    if (!validation.valid) {
+      this.policy = previous;
+      throw new Error(validation.errors.join('; '));
     }
     this.compilePolicy();
   }
@@ -246,48 +255,11 @@ export class PolicyEngine {
    * @returns {Object}
    */
   parseYAML(yaml) {
-    const result = { version: 1, global: {}, sites: {}, context: { firstParty: {}, thirdParty: {} }, gpc: {}, topicsApi: {} };
-    let currentSection = 'global';
-    let currentSite = null;
-    let currentContext = null;
-
-    for (const line of yaml.split('\n')) {
-      const trimmed = line.trim();
-      if (!trimmed || trimmed.startsWith('#')) continue;
-
-      const indent = line.search(/\S/);
-      const isSite = indent === 2 && trimmed.endsWith(':') && !['global:', 'sites:', 'context:', 'firstParty:', 'thirdParty:', 'gpc:', 'topicsApi:'].includes(trimmed);
-
-      if (trimmed === 'global:') { currentSection = 'global'; continue; }
-      if (trimmed === 'sites:') { currentSection = 'sites'; continue; }
-      if (trimmed === 'context:') { currentSection = 'context'; continue; }
-      if (trimmed === 'firstParty:') { currentContext = 'firstParty'; continue; }
-      if (trimmed === 'thirdParty:') { currentContext = 'thirdParty'; continue; }
-      if (trimmed === 'gpc:') { currentSection = 'gpc'; continue; }
-      if (trimmed === 'topicsApi:') { currentSection = 'topicsApi'; continue; }
-
-      if (isSite) {
-        currentSite = trimmed.slice(0, -1);
-        result.sites[currentSite] = {};
-        continue;
-      }
-
-      const [key, ...valParts] = trimmed.split(':');
-      const value = valParts.join(':').trim().replace(/^["']|["']$/g, '');
-
-      if (currentSection === 'global') {
-        result.global[key.trim()] = value;
-      } else if (currentSection === 'sites' && currentSite) {
-        result.sites[currentSite][key.trim()] = value;
-      } else if (currentSection === 'context' && currentContext) {
-        result.context[currentContext][key.trim()] = value;
-      } else if (currentSection === 'gpc') {
-        result.gpc[key.trim()] = value === 'true' || value === 'false' ? value === 'true' : value;
-      } else if (currentSection === 'topicsApi') {
-        result.topicsApi[key.trim()] = value === 'true' || value === 'false' ? value === 'true' : value;
-      }
+    const parsed = loadYAML(yaml);
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+      throw new Error('Enter a YAML policy object');
     }
-    return result;
+    return parsed;
   }
 
   /**
@@ -299,6 +271,11 @@ export class PolicyEngine {
     const validCategories = Object.values(CONSENT_CATEGORIES);
     const validDecisions = Object.values(CONSENT_DECISIONS);
 
+    if (this.policy.global.necessary !== 'allow') errors.push('Necessary cookies must remain allowed');
+    if (typeof this.policy.gpc.enabled !== 'boolean') errors.push('gpc.enabled must be true or false');
+    if (this.policy.gpc.headerName !== 'Sec-GPC' || this.policy.gpc.headerValue !== '1') errors.push('GPC uses the fixed Sec-GPC: 1 header');
+    if (this.policy.topicsApi.enabled || this.policy.fencedFrames?.enabled) errors.push('Privacy Sandbox controls are not implemented');
+
     // Validate global
     for (const [cat, dec] of Object.entries(this.policy.global)) {
       if (!validCategories.includes(cat)) errors.push(`Invalid category in global: ${cat}`);
@@ -307,6 +284,8 @@ export class PolicyEngine {
 
     // Validate sites
     for (const [site, rules] of Object.entries(this.policy.sites)) {
+      if (!rules || typeof rules !== 'object' || Array.isArray(rules)) { errors.push(`Invalid rules for ${site}`); continue; }
+      if (rules.necessary && rules.necessary !== 'allow') errors.push(`Necessary cookies must remain allowed on ${site}`);
       for (const [cat, dec] of Object.entries(rules)) {
         if (!validCategories.includes(cat)) errors.push(`Invalid category in sites.${site}: ${cat}`);
         if (!validDecisions.includes(dec)) errors.push(`Invalid decision in sites.${site}.${cat}: ${dec}`);
@@ -315,6 +294,7 @@ export class PolicyEngine {
 
     // Validate context
     for (const ctx of ['firstParty', 'thirdParty']) {
+      if (this.policy.context[ctx]?.necessary && this.policy.context[ctx].necessary !== 'allow') errors.push('Necessary cookies must remain allowed');
       for (const [cat, dec] of Object.entries(this.policy.context[ctx] || {})) {
         if (!validCategories.includes(cat)) errors.push(`Invalid category in context.${ctx}: ${cat}`);
         if (!validDecisions.includes(dec)) errors.push(`Invalid decision in context.${ctx}.${cat}: ${dec}`);

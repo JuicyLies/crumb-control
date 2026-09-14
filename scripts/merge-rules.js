@@ -24,7 +24,9 @@ try {
 }
 
 // Individual rule files
-const files = glob.sync(path.join(comDir, 'rules', '*.json'));
+// glob patterns use forward slashes on every platform. A Windows path here
+// silently matched zero rule files and produced a severely reduced bundle.
+const files = glob.sync(path.join(comDir, 'rules', '*.json').replace(/\\/g, '/'));
 let count = 0;
 for (const f of files) {
   try {
@@ -43,7 +45,7 @@ for (const f of files) {
 // Crumb Control's own supplementary rules (rules-extra/).
 // Loaded LAST so upstream definitions always win — these only fill gaps,
 // primarily non-English / Italian banners that upstream doesn't cover.
-const extraFiles = glob.sync(path.join(root, 'rules-extra', '*.json'));
+const extraFiles = glob.sync(path.join(root, 'rules-extra', '*.json').replace(/\\/g, '/'));
 let extraCount = 0;
 for (const f of extraFiles) {
   try {

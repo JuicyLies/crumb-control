@@ -5,13 +5,11 @@ const CssMinimizerPlugin = require('css-minimizer-webpack-plugin');
 const TerserPlugin = require('terser-webpack-plugin');
 const ZipPlugin = require('zip-webpack-plugin');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
-const glob = require('glob');
 
 module.exports = (env, argv) => {
   const target = env.target || 'chrome';
   const isProduction = argv.mode === 'production';
   const isFirefox = target === 'firefox';
-  const isSafari = target === 'safari';
   
   const distDir = path.resolve(__dirname, `dist/${target}`);
   const consentOMaticSrc = path.resolve(__dirname, 'Consent-O-Matic/Extension');
@@ -21,13 +19,12 @@ module.exports = (env, argv) => {
   const copyPatterns = [
     // Our manifest (transformed)
     { 
-      from: 'src/manifest.json', 
+      from: isFirefox ? 'src/manifest.firefox.json' : 'src/manifest.json',
       to: 'manifest.json', 
       transform: (content) => {
         const manifest = JSON.parse(content.toString());
         manifest.version = pkg.version;
         if (isFirefox) {
-          delete manifest.declarative_net_request;
           manifest.background = { scripts: ['background.js'], type: 'module' };
         }
         return JSON.stringify(manifest, null, 2);
@@ -65,20 +62,6 @@ module.exports = (env, argv) => {
   // and the manifest loads only content.js + Rules.json. Shipping the raw sources
   // added ~200KB of dead weight and gave store reviewers unused code to query.
   // Verify with: grep -o '"js":\[[^]]*\]' dist/chrome/manifest.json
-  
-  // Firefox-specific: need to copy manifest.firefox.json as manifest.json
-  if (isFirefox) {
-    copyPatterns.unshift({
-      from: 'src/manifest.firefox.json',
-      to: 'manifest.json',
-      transform: (content) => {
-        const manifest = JSON.parse(content.toString());
-        manifest.version = pkg.version;
-        manifest.background = { scripts: ['background.js'], type: 'module' };
-        return JSON.stringify(manifest, null, 2);
-      }
-    });
-  }
   
   return {
     entry: {

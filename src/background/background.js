@@ -1,420 +1,229 @@
-// background.js - Service Worker for Crumb Control
-
+// All durable writes finish before the message is acknowledged. No timer-only buffers.
 import { PolicyEngine } from '../shared/PolicyEngine.js';
 import GDPRConfig from '../content/GDPRConfig.js';
 
-const STORAGE_KEYS = {
-  POLICY: 'udp_policy',
-  AUDIT_LOG: 'udp_audit_log',
-  SYNC_CONFIG: 'udp_sync_config',
-  STATISTICS: 'udp_statistics',
-  PRESET: 'udp_preset',
-  COUNTER: 'udp_banner_counter'
-};
-
-const AUDIT_LOG_MAX_ENTRIES = 10000;
-let tabStatusMap = new Map();
-
-const STATUS = { INIT: 0, NOTHING: 1, SEARCHING: 2, ERROR: 3, HANDLED: 4 };
-
-// Settings presets — see HANDOFF.md section 3
+const KEYS = { policy: 'udp_policy', log: 'udp_audit_log', stats: 'udp_statistics', counter: 'udp_banner_counter' };
+const MAX_ENTRIES = 10000;
 const PRESETS = {
   essential: { necessary: 'allow', preferences: 'reject', analytics: 'reject', marketing: 'reject', social: 'reject', unclassified: 'reject' },
   balanced: { necessary: 'allow', preferences: 'allow', analytics: 'reject', marketing: 'reject', social: 'reject', unclassified: 'reject' },
   allowAll: { necessary: 'allow', preferences: 'allow', analytics: 'allow', marketing: 'allow', social: 'allow', unclassified: 'allow' }
 };
 
-// Ensure fresh installs get an explicit "Essential only" default written to storage,
-// rather than relying on PolicyEngine's in-memory default.
-chrome.runtime.onInstalled.addListener((details) => {
-  if (details.reason !== 'install') return;
-  (async () => {
-    const existing = await chrome.storage.sync.get({ [STORAGE_KEYS.POLICY]: null, [STORAGE_KEYS.PRESET]: null });
-    if (existing[STORAGE_KEYS.POLICY] || existing[STORAGE_KEYS.PRESET]) return;
-    const engine = new PolicyEngine();
-    for (const [cat, dec] of Object.entries(PRESETS.essential)) {
-      engine.setGlobalDefault(cat, dec);
-    }
-    await chrome.storage.sync.set({
-      [STORAGE_KEYS.POLICY]: engine.serialize(),
-      [STORAGE_KEYS.PRESET]: 'essential'
-    });
-  })();
-});
+function hostname(value) {
+  try { return new URL(value.includes('://') ? value : `https://${value}`).hostname; }
+  catch { return ''; }
+}
 
-class BackgroundService {
+// Explicit fields prevent legacy URLs/query strings or arbitrary message data being persisted.
+function cleanEntry(entry) {
+  return {
+    id: entry.id || crypto.randomUUID(), timestamp: Number(entry.timestamp) || Date.now(),
+    site: hostname(String(entry.site || '')), cmp: String(entry.cmp || '').slice(0, 160),
+    clicks: Math.max(0, Number(entry.clicks) || 0),
+    decision: 'auto', action: 'auto', success: entry.success === true
+  };
+}
+
+export class BackgroundService {
   constructor() {
     this.policyEngine = new PolicyEngine();
-    this.auditBuffer = [];
-    this.statisticsBuffer = { clicks: 0, cmps: {}, sites: {} };
-    // Guards against double-counting: Consent-O-Matic's "HandledCMP" string
-    // message and content.js's LOG_AUDIT can both fire for the same banner.
-    this.recentHandled = new Map();
-    // Per-tab tracker observations. In-memory only: cleared when the tab
-    // closes, never written to storage, never leaves the browser.
-    this.trackersByTab = new Map();
-    chrome.tabs.onRemoved.addListener((tabId) => this.trackersByTab.delete(tabId));
-    this.init();
+    this.queue = Promise.resolve();
+    this.auditQueue = Promise.resolve();
+    this.rules = null;
+    // Register synchronously so service-worker wake-up events cannot be missed.
+    this.setupMessageHandlers();
+    chrome.storage.onChanged.addListener((changes, area) => {
+      if (area === 'sync' && changes[KEYS.policy]) {
+        this.enqueue(async () => { await this.loadPolicy(); await this.setupGPC(); }).catch(console.error);
+      }
+    });
+    chrome.runtime.onInstalled.addListener(() => {
+      this.enqueue(async () => { await this.loadPolicy(); await this.setupGPC(); }).catch(console.error);
+    });
+    this.ready = this.init();
+  }
+
+  enqueue(operation) {
+    const next = this.queue.then(() => this.ready).then(operation);
+    this.queue = next.catch(() => {});
+    return next;
   }
 
   async init() {
-    console.log('[UDP] Background service initializing...');
     await GDPRConfig.init();
     await this.loadPolicy();
     await this.setupGPC();
-    this.setupMessageHandlers();
-    setInterval(() => this.flushAudit(), 30000);
-    console.log('[UDP] Background service ready');
+    // Upgrade old logs in place, removing page URLs saved by earlier versions.
+    const stored = await chrome.storage.local.get({ [KEYS.log]: [] });
+    await chrome.storage.local.set({ [KEYS.log]: stored[KEYS.log].slice(-MAX_ENTRIES).map(cleanEntry) });
+    await chrome.storage.local.remove('cachedEntries');
   }
 
   async loadPolicy() {
-    try {
-      const result = await chrome.storage.sync.get({ [STORAGE_KEYS.POLICY]: null });
-      if (result[STORAGE_KEYS.POLICY]) {
-        this.policyEngine.load(result[STORAGE_KEYS.POLICY]);
-      }
-    } catch (e) {
-      console.error('[UDP] Failed to load policy:', e);
-    }
+    const result = await chrome.storage.sync.get({ [KEYS.policy]: null });
+    this.policyEngine.load(result[KEYS.policy] || this.policyEngine.getDefaultPolicy());
   }
 
-  async savePolicy() {
-    await chrome.storage.sync.set({ [STORAGE_KEYS.POLICY]: this.policyEngine.serialize() });
-  }
-
-  async applyPreset(preset) {
-    if (PRESETS[preset]) {
-      for (const [cat, dec] of Object.entries(PRESETS[preset])) {
-        this.policyEngine.setGlobalDefault(cat, dec);
-      }
-      await this.savePolicy();
-      await this.setupGPC();
-    }
-    await chrome.storage.sync.set({ [STORAGE_KEYS.PRESET]: preset });
+  async savePolicy(policy) {
+    const candidate = new PolicyEngine(policy);
+    await chrome.storage.sync.set({ [KEYS.policy]: candidate.serialize() });
+    this.policyEngine = candidate;
+    await this.setupGPC();
   }
 
   async setupGPC() {
-    const gpc = this.policyEngine.getGPCConfig();
-    try {
-      await chrome.declarativeNetRequest.updateEnabledRulesets({
-        enableRulesetIds: gpc.enabled ? ['gpc_ruleset'] : [],
-        disableRulesetIds: gpc.enabled ? [] : ['gpc_ruleset']
-      });
-    } catch(e) { console.warn('[UDP] GPC ruleset:', e.message); }
+    const enabled = this.policyEngine.getGPCConfig().enabled;
+    await chrome.declarativeNetRequest.updateEnabledRulesets({
+      enableRulesetIds: enabled ? ['gpc_ruleset'] : [],
+      disableRulesetIds: enabled ? [] : ['gpc_ruleset']
+    });
   }
 
   setupMessageHandlers() {
     chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-      (async () => {
-        try {
-          // Consent-O-Matic uses string messages (pipe-delimited)
-          if (typeof message === 'string') {
-            const response = await this.handleCoMMessage(message, sender);
-            sendResponse(response);
-          } else {
-            const response = await this.handleUDPMessage(message, sender);
-            sendResponse(response);
-          }
-        } catch (e) {
-          console.error('[UDP] Message error:', e);
-          sendResponse({ error: e.message });
-        }
-      })();
+      this.enqueue(() => typeof message === 'string'
+        ? this.handleCoMMessage(message, sender)
+        : this.handleUDPMessage(message, sender))
+        .then(sendResponse, error => sendResponse({ error: error.message }));
       return true;
     });
   }
 
   async handleCoMMessage(message, sender) {
-    const parts = message.split('|');
-    const cmd = parts[0];
-
+    const [cmd, ...rest] = message.split('|');
     switch (cmd) {
-      case 'GetTabUrl':
-        return sender.tab?.url || '';
-
-      case 'GetRuleList': {
-        const debug = await GDPRConfig.getDebugValues();
-        return await this.fetchRules(debug.alwaysForceRulesUpdate);
-      }
-
-      case 'GetCustomRuleList':
-        return await GDPRConfig.getCustomRuleLists();
-
+      case 'GetTabUrl': return sender.tab?.url || '';
+      case 'GetRuleList': return this.fetchRules();
+      case 'GetCustomRuleList': return GDPRConfig.getCustomRuleLists();
       case 'AddCustomRule': {
-        const newRule = JSON.parse(parts[1]);
         const custom = await GDPRConfig.getCustomRuleLists();
-        const combined = Object.assign({}, custom, newRule);
-        await GDPRConfig.setCustomRuleLists(combined);
+        await GDPRConfig.setCustomRuleLists({ ...custom, ...JSON.parse(rest.join('|')) });
         return true;
       }
-
       case 'DeleteCustomRule': {
-        const del = parts[1];
         const custom = await GDPRConfig.getCustomRuleLists();
-        delete custom[del];
+        delete custom[rest.join('|')];
         await GDPRConfig.setCustomRuleLists(custom);
         return true;
       }
-
-      case 'CMPError':
-        tabStatusMap.set(sender.tab?.id, STATUS.ERROR);
-        return true;
-
-      case 'NothingFound':
-        tabStatusMap.set(sender.tab?.id, STATUS.NOTHING);
-        return true;
-
-      case 'Searching':
-        tabStatusMap.set(sender.tab?.id, STATUS.SEARCHING);
-        return true;
-
-      case 'HandledCMP': {
-        const json = JSON.parse(parts[1]);
-        tabStatusMap.set(sender.tab?.id, STATUS.HANDLED);
-
-        // Log to our audit system too
-        this.addAuditEntry({
-          timestamp: Date.now(),
-          site: new URL(sender.tab?.url || '').host,
-          cmp: json.cmp,
-          clicks: json.clicks,
-          decision: 'auto',
-          action: 'auto',
-          success: true
-        });
-
-        return true;
-      }
-
-      default:
-        return null;
+      // Our content callback is the single writer of audit events, avoiding double counting.
+      case 'HandledCMP': case 'CMPError': case 'NothingFound': case 'Searching': return true;
+      default: return null;
     }
+  }
+
+  async pageState(tabId) {
+    try { return await chrome.tabs.sendMessage(tabId, { type: 'GET_PAGE_STATE' }, { frameId: 0 }); }
+    catch { return { status: 'unavailable', trackers: null }; }
   }
 
   async handleUDPMessage(message, sender) {
     switch (message.type) {
-      case 'GET_POLICY':
-        return { policy: this.policyEngine.serialize() };
-
+      case 'GET_POLICY': return { policy: this.policyEngine.serialize() };
       case 'SET_POLICY':
-        this.policyEngine.load(message.policy);
-        await this.savePolicy();
-        await this.setupGPC();
-        if (message.preset) {
-          await chrome.storage.sync.set({ [STORAGE_KEYS.PRESET]: message.preset });
-        }
+        await this.savePolicy(message.policy);
         return { success: true };
-
-      case 'GET_PRESET': {
-        const result = await chrome.storage.sync.get({ [STORAGE_KEYS.PRESET]: 'essential' });
-        return { preset: result[STORAGE_KEYS.PRESET] };
+      case 'GET_PRESET': return { preset: 'custom' };
+      case 'SET_PRESET': {
+        if (!PRESETS[message.preset]) throw new Error('Unknown preset');
+        const policy = this.policyEngine.serialize();
+        policy.global = PRESETS[message.preset];
+        await this.savePolicy(policy);
+        return { success: true };
       }
-
-      case 'SET_PRESET':
-        await this.applyPreset(message.preset);
+      case 'GET_DECISIONS': return { decisions: this.policyEngine.getAllDecisions(message.site) };
+      case 'SET_SITE_OVERRIDE': {
+        const candidate = new PolicyEngine(this.policyEngine.serialize());
+        candidate.setSiteOverride(message.site, message.category, message.decision);
+        await this.savePolicy(candidate.serialize());
         return { success: true };
-
-      case 'GET_DECISIONS':
-        return { decisions: this.policyEngine.getAllDecisions(message.site) };
-
-      case 'SET_SITE_OVERRIDE':
-        this.policyEngine.setSiteOverride(message.site, message.category, message.decision);
-        await this.savePolicy();
+      }
+      case 'SET_SITE_DISABLED': {
+        const site = hostname(String(message.site || ''));
+        if (!site || site !== message.site) throw new Error('Enter a valid hostname');
+        const { disabledPages } = await chrome.storage.sync.get({ disabledPages: {} });
+        if (message.disabled) disabledPages[site] = true;
+        else delete disabledPages[site];
+        await chrome.storage.sync.set({ disabledPages });
         return { success: true };
-
+      }
       case 'LOG_AUDIT':
-        this.addAuditEntry(message.entry);
+        await this.addAuditEntry({ ...message.entry, site: hostname(sender.tab?.url || '') });
         return { success: true };
-
-      case 'GET_AUDIT_LOG':
-        return { log: await this.getAuditLog(message.limit) };
-
-      case 'EXPORT_DSR':
-        return { data: await this.exportDSR() };
-
-      case 'GET_STATISTICS':
-        return { statistics: await this.getStatistics() };
-
-      case 'GET_COUNTER':
-        return { counter: await this.getCounter() };
-
-      case 'REPORT_TRACKERS': {
-        // Content script observed which third-party trackers a page loaded.
-        // Stored per-tab in memory only — never persisted, never sent anywhere.
-        const tabId = sender?.tab?.id;
-        if (tabId != null) {
-          this.trackersByTab.set(tabId, {
-            total: message.total || 0,
-            byCategory: message.byCategory || {},
-            domains: message.domains || [],
-            site: message.site || ''
-          });
+      case 'GET_AUDIT_LOG': return { log: await this.getAuditLog(message.limit) };
+      case 'CLEAR_AUDIT_LOG':
+        await this.auditQueue;
+        await chrome.storage.local.set({ [KEYS.log]: [] });
+        return { success: true };
+      case 'EXPORT_DSR': return { data: await this.exportDSR() };
+      case 'GET_STATISTICS': return { statistics: await this.getStatistics() };
+      case 'GET_COUNTER': return { counter: await this.getCounter() };
+      case 'GET_PAGE_STATE': return this.pageState(message.tabId);
+      case 'GET_TRACKERS': return { trackers: (await this.pageState(message.tabId))?.trackers || null };
+      case 'FRAME_STATUS':
+        if (sender.frameId !== 0 && sender.tab?.id != null) {
+          try { await chrome.tabs.sendMessage(sender.tab.id, message, { frameId: 0 }); } catch { /* Navigated. */ }
         }
-        return { ok: true };
-      }
-
-      case 'GET_TRACKERS': {
-        const tabId = message.tabId;
-        return { trackers: this.trackersByTab.get(tabId) || null };
-      }
-
-      default:
-        return { error: 'Unknown message type' };
+        return { success: true };
+      default: throw new Error('Unknown message type');
     }
   }
 
-  async fetchRules(forceUpdate = false) {
-    // Try bundled Rules.json first
-    try {
-      const url = chrome.runtime.getURL('Rules.json');
-      const entry = await chrome.storage.local.get({ cachedEntries: {} });
-      const cached = entry.cachedEntries[url];
-      const maxStaleness = 22 * 3600 * 1000 + Math.random() * 26 * 3600 * 1000;
-
-      if (!forceUpdate && cached && (Date.now() - cached.timestamp) < maxStaleness) {
-        return [cached.rules];
-      }
-
-      const response = await fetch(url);
-      if (response.ok) {
-        const rules = await response.json();
-        const updated = { ...entry.cachedEntries, [url]: { timestamp: Date.now(), rules } };
-        await chrome.storage.local.set({ cachedEntries: updated });
-        return [rules];
-      }
-    } catch (e) {
-      console.warn('[UDP] Failed to load bundled rules:', e.message);
-    }
-
-    // Fallback: fetch from remote
-    try {
-      const ruleLists = await GDPRConfig.getRuleLists();
-      const rules = [];
-      for (const listUrl of ruleLists) {
-        const response = await fetch(listUrl);
-        if (response.ok) {
-          const data = await response.json();
-          rules.push(data);
-        }
-      }
-      return rules;
-    } catch (e) {
-      console.error('[UDP] Failed to fetch remote rules:', e);
-      return [];
-    }
+  async fetchRules() {
+    if (this.rules) return [this.rules];
+    const response = await fetch(chrome.runtime.getURL('Rules.json'));
+    if (!response.ok) throw new Error('Bundled banner rules could not be loaded');
+    this.rules = await response.json();
+    return [this.rules];
   }
 
-  addAuditEntry(entry) {
-    this.auditBuffer.push({
-      id: crypto.randomUUID(),
-      timestamp: entry.timestamp || Date.now(),
-      ...entry
-    });
-
-    if (entry.cmp) {
-      this.statisticsBuffer.cmps[entry.cmp] = (this.statisticsBuffer.cmps[entry.cmp] || 0) + 1;
-    }
-    if (entry.site) {
-      this.statisticsBuffer.sites[entry.site] = (this.statisticsBuffer.sites[entry.site] || 0) + 1;
-    }
-
-    // Lifetime "banners handled" counter — local only, never leaves the browser.
-    if (entry.success) {
-      this.incrementCounter(entry.site, entry.cmp);
-    }
-
-    if (this.auditBuffer.length >= 100) {
-      this.flushAudit();
-    }
-  }
-
-  /**
-   * Bump the lifetime counter, de-duplicating repeat signals for the same
-   * site+CMP within a short window so one banner only ever counts once.
-   */
-  async incrementCounter(site, cmp) {
-    const key = `${site || '?'}|${cmp || '?'}`;
-    const now = Date.now();
-
-    const last = this.recentHandled.get(key);
-    if (last && (now - last) < 5000) return;
-    this.recentHandled.set(key, now);
-
-    // Keep the dedupe map from growing unbounded.
-    if (this.recentHandled.size > 200) {
-      for (const [k, t] of this.recentHandled) {
-        if (now - t > 60000) this.recentHandled.delete(k);
-      }
-    }
-
-    try {
+  addAuditEntry(raw) {
+    const operation = this.auditQueue.then(async () => {
+      const entry = cleanEntry(raw);
+      const now = Date.now();
       const stored = await chrome.storage.local.get({
-        [STORAGE_KEYS.COUNTER]: { total: 0, since: now }
+        [KEYS.log]: [], [KEYS.counter]: { total: 0, since: null },
+        [KEYS.stats]: { clicks: 0, cmps: {}, sites: {} }
       });
-      const counter = stored[STORAGE_KEYS.COUNTER];
-      counter.total = (counter.total || 0) + 1;
-      if (!counter.since) counter.since = now;
-      await chrome.storage.local.set({ [STORAGE_KEYS.COUNTER]: counter });
-    } catch (e) {
-      console.warn('[UDP] Counter increment failed:', e.message);
-    }
-  }
-
-  async getCounter() {
-    const stored = await chrome.storage.local.get({
-      [STORAGE_KEYS.COUNTER]: { total: 0, since: null }
+      const log = [...stored[KEYS.log], entry].slice(-MAX_ENTRIES);
+      const counter = stored[KEYS.counter];
+      const stats = stored[KEYS.stats];
+      if (entry.success) { counter.total++; counter.since ||= now; }
+      stats.clicks += entry.clicks;
+      if (entry.cmp) stats.cmps[entry.cmp] = (stats.cmps[entry.cmp] || 0) + 1;
+      if (entry.site) stats.sites[entry.site] = (stats.sites[entry.site] || 0) + 1;
+      await chrome.storage.local.set({ [KEYS.log]: log, [KEYS.counter]: counter, [KEYS.stats]: stats });
     });
-    return stored[STORAGE_KEYS.COUNTER];
-  }
-
-  async flushAudit() {
-    if (!this.auditBuffer.length) return;
-    try {
-      const result = await chrome.storage.local.get({ [STORAGE_KEYS.AUDIT_LOG]: [] });
-      const log = result[STORAGE_KEYS.AUDIT_LOG];
-      log.push(...this.auditBuffer);
-      if (log.length > AUDIT_LOG_MAX_ENTRIES) {
-        log.splice(0, log.length - AUDIT_LOG_MAX_ENTRIES);
-      }
-      await chrome.storage.local.set({ [STORAGE_KEYS.AUDIT_LOG]: log });
-      this.auditBuffer = [];
-    } catch (e) {
-      console.error('[UDP] Flush audit failed:', e);
-    }
+    this.auditQueue = operation.catch(() => {});
+    return operation;
   }
 
   async getAuditLog(limit = 100) {
-    await this.flushAudit();
-    const result = await chrome.storage.local.get({ [STORAGE_KEYS.AUDIT_LOG]: [] });
-    return result[STORAGE_KEYS.AUDIT_LOG].slice(-limit);
+    await this.auditQueue;
+    const stored = await chrome.storage.local.get({ [KEYS.log]: [] });
+    return stored[KEYS.log].slice(-Math.max(1, Math.min(MAX_ENTRIES, Number(limit) || 100)));
   }
 
   async getStatistics() {
-    await this.flushAudit();
-    const result = await chrome.storage.local.get({ [STORAGE_KEYS.STATISTICS]: { clicks: 0, cmps: {}, sites: {} } });
-    const stats = result[STORAGE_KEYS.STATISTICS];
-    // Merge buffered
-    for (const [k, v] of Object.entries(this.statisticsBuffer.cmps)) {
-      stats.cmps[k] = (stats.cmps[k] || 0) + v;
-    }
-    for (const [k, v] of Object.entries(this.statisticsBuffer.sites)) {
-      stats.sites[k] = (stats.sites[k] || 0) + v;
-    }
-    return stats;
+    const stored = await chrome.storage.local.get({ [KEYS.stats]: { clicks: 0, cmps: {}, sites: {} } });
+    return stored[KEYS.stats];
+  }
+
+  async getCounter() {
+    const stored = await chrome.storage.local.get({ [KEYS.counter]: { total: 0, since: null } });
+    return stored[KEYS.counter];
   }
 
   async exportDSR() {
-    await this.flushAudit();
-    const result = await chrome.storage.local.get({
-      [STORAGE_KEYS.AUDIT_LOG]: [],
-      [STORAGE_KEYS.POLICY]: null
-    });
+    await this.auditQueue;
+    const preferences = await chrome.storage.sync.get({ [KEYS.policy]: null, disabledPages: {}, udp_toast_enabled: true });
     return {
-      policy: result[STORAGE_KEYS.POLICY],
-      auditLog: result[STORAGE_KEYS.AUDIT_LOG],
-      statistics: await this.getStatistics(),
-      exportDate: new Date().toISOString(),
-      version: '0.2.0'
+      policy: preferences[KEYS.policy] || this.policyEngine.serialize(),
+      disabledPages: preferences.disabledPages, confirmationToast: preferences.udp_toast_enabled,
+      auditLog: await this.getAuditLog(MAX_ENTRIES), statistics: await this.getStatistics(),
+      counter: await this.getCounter(), exportDate: new Date().toISOString(),
+      version: chrome.runtime.getManifest().version
     };
   }
 }

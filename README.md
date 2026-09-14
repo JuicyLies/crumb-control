@@ -1,6 +1,6 @@
 # Crumb Control
 
-> **Stop clicking cookie banners.** Tell your browser what you want once, and it handles every website for you.
+> **Stop clicking cookie banners.** Tell your browser what you want once, and it handles supported consent banners for you.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Works in Chrome](https://img.shields.io/badge/Works%20in-Chrome-green.svg)](#try-it)
@@ -12,9 +12,9 @@
 
 You know those cookie pop-ups that appear on **every single website**? The ones where "Accept All" is one big button and "Reject All" is buried behind three clicks?
 
-This is a browser add-on that **does the clicking for you**. You choose your preferences once — "block all tracking, allow the stuff that makes sites work" — and the add-on quietly says "reject" (or "accept") on your behalf, every time, on every site.
+This is a browser add-on that **does the clicking for you** on supported consent banners. You choose your preferences once — "reject tracking, allow the stuff that makes sites work" — and the add-on uses each recognised banner's own controls on your behalf.
 
-You never see the banners. You never have to think about it.
+Supported banners are answered automatically, usually before you need to interact with them.
 
 ---
 
@@ -44,7 +44,7 @@ Then the lobbying started:
 
 | Feature | What it means |
 |---|---|
-| 🍪 **Auto-clicks cookie banners** | You never see them. The add-on picks the buttons for you based on what you told it. |
+| 🍪 **Auto-clicks supported cookie banners** | The add-on picks the buttons for you based on what you told it. |
 | 🌍 **Works in your language** | Accent- and punctuation-tolerant matching, so Italian, French, German and Spanish banners work too |
 | 🎛️ **You choose the rules** | "Reject tracking everywhere. Allow analytics on Wikipedia only." Whatever you want. |
 | 🔢 **Counts what it's saved you** | A running tally of banners handled — stored locally, never sent anywhere |
@@ -64,7 +64,7 @@ Once the store review is done, you'll click **Add to Chrome** and that's it. Wat
 
 ### Option 2: Download and drop in
 1. Grab the latest release from the [Releases page](https://github.com/JuicyLies/crumb-control/releases)
-2. Download `udp-chrome-v0.4.0.zip` (or `udp-firefox-v0.4.0.zip`)
+2. Download `udp-chrome-v0.4.1.zip` (or `udp-firefox-v0.4.1.zip`)
 3. **Unzip it** somewhere
 4. In Chrome: open `chrome://extensions`, flip the **Developer mode** switch (top right), click **Load unpacked**, pick the unzipped folder
 5. In Firefox: open `about:debugging#/runtime/this-firefox`, click **Load Temporary Add-on**, pick any file inside the unzipped folder
@@ -81,7 +81,7 @@ npm run build:chrome   # or build:firefox
 
 Then load `dist/chrome/` (or `dist/firefox/`) as an unpacked extension.
 
-**Need:** Node.js 18 or newer.
+**Need:** Node.js 22.18 or newer, or Node.js 24.11 or newer.
 
 **A note on the build:** `Consent-O-Matic` is a git submodule, so we can't edit it directly without changes being lost on the next submodule update. `scripts/patch-matcher.js` re-applies our language-tolerant text matching to `Tools.js` at build time. It's idempotent and runs automatically via `npm run prepare-rules`. If upstream restructures `Tools.findElement()`, the patch fails loudly rather than silently producing a broken build.
 
@@ -142,7 +142,7 @@ There's also a supplementary ruleset in [`rules-extra/`](rules-extra/) adding br
 
 ## What we add to Consent-O-Matic
 
-This project is **built on Consent-O-Matic** — the Aarhus University open-source engine that powers the cookie-banner detection and maintains the community rule corpus (209 CMPs bundled here). We don't hide that; it's the foundation.
+This project is **built on Consent-O-Matic** — the Aarhus University open-source engine that powers cookie-banner detection and maintains the community rule corpus bundled here. We don't hide that; it's the foundation.
 
 What we've added on top:
 
@@ -155,7 +155,7 @@ What we've added on top:
 | **Audit log** with JSON/DSR export | ❌ | ✅ |
 | **No phone-home** (report button → GitHub issue) | posts to their server | ✅ |
 
-The language fix wasn't just for us — we [upstreamed it](https://github.com/cavi-au/Consent-O-Matic/pull/597) so every Consent-O-Matic user benefits. It fixes the root cause behind 679 `textFilter` matchers that silently failed on non-English banners.
+We [submitted the language fix upstream](https://github.com/cavi-au/Consent-O-Matic/pull/597). It normalises both sides of the comparison used by 679 `textFilter` entries, avoiding a class of silent non-English matching failures. The pull request is still under review.
 
 ---
 
@@ -179,9 +179,9 @@ Brave, Edge and Opera all run on Chromium, so the Chrome build will very likely 
 **Yes, and you can verify it yourself.** This add-on:
 
 - ✅ **Collects no data.** No analytics, no telemetry, no accounts, no servers you don't control.
-- ✅ **Stays local.** Everything is in your browser's own storage. It never phones home.
+- ✅ **No Crumb Control backend.** Activity stays in local browser storage; preferences may follow your browser profile through its built-in sync.
 - ✅ **Open source.** Every line of code is public. Read it, audit it, fork it.
-- ✅ **No hidden network requests.** The only thing it sends is a `Sec-GPC: 1` header (the privacy signal) to sites you're already visiting. There is no backend, no sync server, and nothing phones home.
+- ✅ **No hidden extension requests.** It can add a `Sec-GPC: 1` privacy header to requests for sites you visit. Rules are bundled and Crumb Control operates no backend or sync server.
 
 Full details: see [PRIVACY_POLICY.md](PRIVACY_POLICY.md).
 

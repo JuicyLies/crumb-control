@@ -125,7 +125,7 @@ function main() {
     process.exit(1);
   }
 
-  let src = fs.readFileSync(toolsPath, 'utf8');
+  let src = fs.readFileSync(toolsPath, 'utf8').replace(/\r\n/g, '\n');
 
   if (src.includes(MARKER)) {
     console.log('patch-matcher: already applied, skipping');

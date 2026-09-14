@@ -13,9 +13,7 @@ const DEFAULT_DEBUG = {
   alwaysForceRulesUpdate: false
 };
 
-const DEFAULT_RULE_LISTS = [
-  "https://raw.githubusercontent.com/cavi-au/Consent-O-Matic/master/Rules.json"
-];
+const DEFAULT_RULE_LISTS = []; // Rules are packaged with each extension release.
 
 const DEFAULT_CONSENT_VALUES = {
   'A': false,  // Preferences

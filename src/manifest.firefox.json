@@ -1,14 +1,16 @@
 {
   "name": "Crumb Control",
-  "description": "Automatic cookie consent handling, GPC signal, and a local privacy policy engine \u2014 no accounts, no cloud, no tracking.",
-  "version": "0.4.0",
+  "description": "Automatic cookie consent handling, GPC signal, and a private policy engine — no account, backend, telemetry, or tracking.",
+  "version": "0.4.1",
   "manifest_version": 3,
   "author": "Daniel Milanesi",
   "homepage_url": "https://github.com/JuicyLies/crumb-control",
   "permissions": [
     "storage",
     "activeTab",
-    "tabs"
+    "tabs",
+    "declarativeNetRequest",
+    "declarativeNetRequestWithHostAccess"
   ],
   "host_permissions": [
     "<all_urls>"
@@ -55,10 +57,26 @@
   "browser_specific_settings": {
     "gecko": {
       "id": "udp@juicylies.dev",
-      "strict_min_version": "109.0"
+      "strict_min_version": "128.0"
     }
   },
   "web_accessible_resources": [
-    "Rules.json"
-  ]
+    {
+      "resources": [
+        "Rules.json"
+      ],
+      "matches": [
+        "<all_urls>"
+      ]
+    }
+  ],
+  "declarative_net_request": {
+    "rule_resources": [
+      {
+        "id": "gpc_ruleset",
+        "enabled": true,
+        "path": "rules/gpc-rules.json"
+      }
+    ]
+  }
 }

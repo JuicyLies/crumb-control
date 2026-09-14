@@ -853,3 +853,5 @@ body {
 .main-content::-webkit-scrollbar-track { background: transparent; }
 .main-content::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
 .main-content::-webkit-scrollbar-thumb:hover { background: var(--bronze); }
+
+[hidden] { display: none !important; }

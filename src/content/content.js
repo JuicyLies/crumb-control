@@ -10,6 +10,37 @@ let udpPolicyEngine = null;
 let udpSiteHost = '';
 let udpIsThirdParty = false;
 let udpToastShown = false;
+let pageStatus = 'initializing';
+let pageTrackers = null;
+let settingsChanged = false;
+
+function sendMessage(message) {
+  return chrome.runtime.sendMessage(message).then(response => {
+    if (response?.error) throw new Error(response.error);
+    return response;
+  });
+}
+
+function setPageStatus(status) {
+  if (pageStatus === 'handled' && status === 'nothing') return;
+  pageStatus = status;
+  if (window.top !== window.self && ['handled', 'error', 'unverified'].includes(status)) {
+    sendMessage({ type: 'FRAME_STATUS', status }).catch(() => {});
+  }
+}
+
+chrome.runtime.onMessage.addListener((message, sender, respond) => {
+  if (message.type === 'GET_PAGE_STATE') {
+    respond({ status: settingsChanged ? 'reload' : pageStatus, trackers: pageTrackers });
+  } else if (message.type === 'FRAME_STATUS' && window.top === window.self) {
+    if (pageStatus !== 'disabled' && !settingsChanged) setPageStatus(message.status);
+    respond({ success: true });
+  }
+});
+
+chrome.storage.onChanged.addListener((changes, area) => {
+  if (area === 'sync' && (changes.udp_policy || changes.disabledPages)) settingsChanged = true;
+});
 
 // Small bronze/black confirmation card, shown only when a banner was actually
 // handled. Shadow DOM keeps page CSS from touching it (and vice versa).
@@ -119,7 +150,7 @@ async function showUdpConfirmationToast(presetLabel) {
 function getUDPConsentValues() {
   if (!udpPolicyEngine) return {};
   
-  const decisions = udpPolicyEngine.getAllDecisions(udpSiteHost);
+  const decisions = udpPolicyEngine.getAllDecisions(udpSiteHost, udpIsThirdParty);
   const values = {};
   
   // Map our policy categories to CMP categories (A/B/D/E/F/X)
@@ -138,35 +169,30 @@ function getUDPConsentValues() {
     }
   }
   
+  values.D = values.B; // Both upstream analytics categories follow the analytics choice.
   return values;
 }
 
 async function contentScriptRunner() {
   if (document.contentType !== "text/html") return;
 
-  // Figure out the URL
-  let url = location.href;
-  let insideIframe = window !== window.parent;
-  if (insideIframe) {
-    url = await new Promise((resolve) => {
-      chrome.runtime.sendMessage("GetTabUrl", (response) => {
-        resolve(response);
-      });
-    });
-  }
+  const insideIframe = window !== window.parent;
+  const url = insideIframe ? await sendMessage('GetTabUrl') : location.href;
   const urlObj = new URL(url);
-  udpSiteHost = urlObj.host;
-  udpIsThirdParty = insideIframe;
-
-  // Initialize our policy engine with defaults
-  udpPolicyEngine = new PolicyEngine();
-
-  // Get Consent-O-Matic's rule lists from background
-  const fetchedRules = await new Promise((resolve) => {
-    chrome.runtime.sendMessage("GetRuleList", (response) => {
-      resolve(response || []);
-    });
-  });
+  udpSiteHost = urlObj.hostname;
+  udpIsThirdParty = insideIframe && location.hostname !== udpSiteHost;
+  const stored = await chrome.storage.sync.get({ udp_policy: null, disabledPages: {} });
+  if (stored.disabledPages[udpSiteHost]) {
+    setPageStatus('disabled');
+    return;
+  }
+  udpPolicyEngine = new PolicyEngine(stored.udp_policy);
+  if (Object.values(udpPolicyEngine.getAllDecisions(udpSiteHost, udpIsThirdParty)).includes('ask')) {
+    setPageStatus('manual');
+    return; // A boolean-only CMP adapter cannot faithfully automate an "ask" decision.
+  }
+  const fetchedRules = await sendMessage('GetRuleList');
+  if (!Array.isArray(fetchedRules) || !fetchedRules.length) throw new Error('No bundled rules available');
 
   const customRules = await GDPRConfig.getCustomRuleLists();
 
@@ -192,13 +218,13 @@ async function contentScriptRunner() {
 
   // Callback for when CMP is handled
   const handledCallback = (evt) => {
-    if (evt.handled) {
+    if (evt.handled && evt.clicks > 0) {
+      setPageStatus('handled');
       // Log to our audit system
-      chrome.runtime.sendMessage({
+      sendMessage({
         type: "LOG_AUDIT",
         entry: {
           timestamp: Date.now(),
-          url: location.href,
           site: udpSiteHost,
           cmp: evt.cmpName,
           clicks: evt.clicks,
@@ -206,16 +232,20 @@ async function contentScriptRunner() {
           action: 'auto',
           success: true
         }
-      });
+      }).catch(error => console.error('[UDP] Audit persistence failed:', error));
       console.log("[UDP] Handled CMP:", evt.cmpName, "clicks:", evt.clicks);
       showUdpConfirmationToast(presetLabel);
     } else if (evt.error) {
-      console.warn("[UDP] CMP error");
+      setPageStatus('error');
+      sendMessage({ type: 'LOG_AUDIT', entry: { site: udpSiteHost, cmp: evt.cmpName, success: false } }).catch(() => {});
+    } else {
+      setPageStatus(evt.handled ? 'unverified' : 'nothing');
     }
   };
 
   // Start ConsentEngine with OUR consent values
   if (generalSettings.enabled !== false) {
+    setPageStatus('searching');
     ConsentEngine.debugValues = debugValues;
     ConsentEngine.generalSettings = generalSettings;
     ConsentEngine.topFrameUrl = udpSiteHost;
@@ -228,8 +258,11 @@ async function contentScriptRunner() {
         console.log("[UDP] ConsentEngine loaded with", engine.cmps.length, "CMPs");
       }
     } catch (e) {
+      setPageStatus('error');
       console.error("[UDP] Failed to start ConsentEngine:", e);
     }
+  } else {
+    setPageStatus('disabled');
   }
 }
 
@@ -273,30 +306,25 @@ window.addEventListener("message", (event) => {
   }
 });
 
+function startContentScript() {
+  contentScriptRunner().catch(error => {
+    setPageStatus('error');
+    console.error('[UDP] Could not initialize:', error);
+  });
+}
+
 // Initialize
 if (document.readyState === "loading") {
-  document.addEventListener("DOMContentLoaded", contentScriptRunner);
+  document.addEventListener("DOMContentLoaded", startContentScript);
 } else {
-  contentScriptRunner();
+  startContentScript();
 }
 
 // Observe which third-party trackers this page loads, and tell the popup.
 // This is observation only — we do not block anything, and the data never
 // leaves the browser. See TrackerDetector.js for why we don't say "blocked".
 if (window.top === window) {
-  watchForTrackers((result) => {
-    try {
-      chrome.runtime.sendMessage({
-        type: 'REPORT_TRACKERS',
-        total: result.total,
-        byCategory: result.byCategory,
-        domains: result.domains,
-        site: location.hostname
-      });
-    } catch (e) {
-      // Extension context can go away on reload; nothing to do.
-    }
-  });
+  watchForTrackers((result) => { pageTrackers = result; });
 }
 
 // Expose UDP API

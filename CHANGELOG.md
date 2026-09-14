@@ -7,6 +7,26 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ---
 
+## [0.4.1] — 2026-09-14
+
+### Added
+- A visible Global Privacy Control switch in Settings.
+- Runtime and browser integration tests covering stored policies, site overrides, disabled and manual modes, GPC headers, durable activity records and popup status.
+- A local marketing packager that validates carousel assets and creates upload-ready silent videos, captions and an index.
+
+### Fixed
+- Saved policy, per-site choices and disabled-site settings are now applied by content scripts.
+- Activity writes are durable, hostname-only and accurately count confirmed interactions.
+- The popup reports observed page state instead of inferring that a page is protected from preferences alone.
+- Packaged CMP rules build consistently on Windows and are never fetched remotely at runtime.
+- Firefox packaging includes the GPC ruleset and uses a compatible manifest shape.
+- Release tags now trigger CI, and lint failures stop the build.
+
+### Changed
+- Policy YAML is parsed and validated before it replaces the active policy.
+- Exported data uses the active synced policy and installed extension version.
+- Privacy and store copy now distinguishes local activity data from browser-managed preference sync.
+
 ## [0.4.0] — 2026-08-27
 
 ### Added

@@ -1,14 +1,14 @@
 # Privacy Policy — Crumb Control
 
-**Effective date:** 2026-08-27
-**Version:** 0.4.0
+**Effective date:** 2026-09-14
+**Version:** 0.4.1
 **Extension ID:** `udp@juicylies.dev` (Firefox) / pending (Chrome)
 
 ---
 
 ## Summary
 
-**Crumb Control collects no personal data.** No analytics, no telemetry, no vendor backend, no user accounts, no cloud sync. Everything stays in your browser's own storage.
+**Crumb Control collects no personal data.** There is no analytics, telemetry, vendor backend or user account. Activity stays in local browser storage. Policy preferences use the browser's built-in sync storage and may follow your signed-in browser profile; we neither operate nor receive data from that service.
 
 ---
 
@@ -29,7 +29,7 @@
 
 - **Browsing history** — we never log URLs beyond the hostname needed for per-site preferences.
 - **Personally identifiable information** — no email, name, IP address, device fingerprint or tracking ID.
-- **Anything at all, in fact** — we operate no server. There is nowhere for your data to go.
+- **Data sent to us** — we operate no server and receive no extension data.
 
 ---
 
@@ -84,13 +84,13 @@ We have no central database to request deletion from — your data lives in your
 
 ## International Transfers
 
-None. No data is transmitted anywhere, so there are no transfers of any kind.
+Crumb Control makes no international transfer because it receives no data. Your browser vendor may process synced policy preferences under its own terms and infrastructure if browser profile sync is enabled.
 
 ---
 
 ## Security
 
-- **Storage:** the browser's own `storage.sync` (encrypted at rest by the browser) and `storage.local`
+- **Storage:** the browser's own `storage.sync` and `storage.local` APIs
 - **Permissions:** minimal — see the [store listing](STORE_LISTING.md#permissions--why) for justification of each
 - **No eval, no remote code** — everything is bundled; no dynamic script loading
 - **No secrets held** — the extension has no credentials, tokens or accounts
@@ -101,7 +101,9 @@ None. No data is transmitted anywhere, so there are no transfers of any kind.
 
 Material changes will be noted in the changelog and on the GitHub releases page.
 
-**Changed in 0.4.0:** removed all references to end-to-end encrypted cloud sync. That feature was described in earlier drafts of this document but was never implemented and does not exist in any released build. There is no sync endpoint, no passphrase, and no encryption layer, because nothing is ever transmitted. This document now describes only what the extension actually does.
+**Changed in 0.4.1:** clarified browser-managed preference sync, restricted activity records to hostnames, and documented that the CMP rules are bundled with no runtime rule download.
+
+**Changed in 0.4.0:** removed references to a custom end-to-end encrypted cloud sync feature that was described in earlier drafts but never implemented. Crumb Control has no sync endpoint, passphrase or custom encryption layer.
 
 ---
 
@@ -115,7 +117,7 @@ Material changes will be noted in the changelog and on the GitHub releases page.
 
 ## Legal Basis
 
-Crumb Control does not collect, transmit or process personal data on our behalf, so there is no controller-side lawful basis to declare. Your preferences and activity log are written to your browser's own local storage, stay on your device, and are never sent to us or to any third party — we operate no server and receive nothing.
+Crumb Control does not collect, transmit or process personal data on our behalf, so there is no controller-side lawful basis to declare. The activity log stays in local browser storage. Preferences may be handled by the browser vendor's sync service when profile sync is enabled, independently of us. We operate no server and receive nothing.
 
 Because no personal data reaches us, we are not a data controller in respect of your use of this extension. This document describes the extension's actual behaviour and is not legal advice.
 

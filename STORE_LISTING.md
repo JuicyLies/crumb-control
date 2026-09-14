@@ -3,7 +3,7 @@
 ## Store Page Copy
 
 ### Short Description (132 char max)
-Set your cookie preferences once. Crumb Control answers consent banners for you, on every site — in any language.
+Set your cookie preferences once. Crumb Control answers supported consent banners for you across languages.
 
 ### Detailed Description
 
@@ -13,18 +13,18 @@ Set your cookie preferences once. Crumb Control answers consent banners for you,
 
 The EU's ePrivacy Regulation was meant to fix this — set your choice once in the browser, sites must respect it. Lobbying killed it. Crumb Control is that idea, built as an extension you install yourself.
 
-**The fix:** Choose what you want to allow. Crumb Control clicks the right buttons on every banner, automatically.
+**The fix:** Choose what you want to allow. Crumb Control clicks the right buttons on supported banners automatically.
 
 ### What you get
 
 ✅ **Auto-handles cookie banners** — uses the site's own controls, picks "Reject" (or "Accept") per your settings
 ✅ **Works in your language** — accent- and punctuation-tolerant matching, so Italian, French, German and Spanish banners work, not just English
-✅ **209 CMP rules** — OneTrust, Cookiebot, Quantcast, Didomi, Sourcepoint, Iubenda, Usercentrics and 200+ more
+✅ **Broad bundled rules** — major platforms include OneTrust, Cookiebot, Quantcast, Didomi, Sourcepoint, Iubenda and Usercentrics
 ✅ **Global Privacy Control** — sends `Sec-GPC: 1`, the standardised opt-out signal some laws require sites to honour
 ✅ **Per-site decisions in one tap** — override any category for a single site without touching your global settings
 ✅ **Running counter** — see how many banners it's handled for you
 ✅ **Activity log + JSON export** — every decision recorded, exportable for your own records
-✅ **Zero telemetry, zero backend** — no accounts, no servers, nothing leaves your browser
+✅ **Zero telemetry, zero backend** — no Crumb Control account or server; your browser may sync preferences through your signed-in profile
 ✅ **Open source (MIT)** — built on Consent-O-Matic's CMP rule corpus
 
 ### How it works
@@ -39,12 +39,11 @@ The EU's ePrivacy Regulation was meant to fix this — set your choice once in t
 | Permission | Reason |
 |---|---|
 | `<all_urls>` (host) | Cookie banners appear on any site; we need to detect and interact with them |
-| `storage` | Your settings, activity log and counter — stored locally in the browser |
+| `storage` | Settings, activity log and counter; settings may use the browser's built-in profile sync |
 | `activeTab`, `tabs` | Identify the current site for per-site scoping |
-| `scripting` | Click banner buttons using the site's own DOM |
 | `declarativeNetRequest` | Inject the `Sec-GPC: 1` header on outgoing requests |
 
-No data leaves your browser. No analytics, no tracking, no vendor account.
+No data is sent to us. There is no analytics, tracking or vendor account. If browser profile sync is enabled, the browser vendor may replicate preferences under its own privacy terms.
 
 ### Why this is different
 

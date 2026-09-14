@@ -19,6 +19,7 @@ class Popup {
   constructor() {
     this.policyEngine = new PolicyEngine();
     this.hostname = '';
+    this.tabId = null;
     this.currentAuditPage = 1;
     this.auditFilter = 'all';
     this.auditSearch = '';
@@ -34,7 +35,8 @@ class Popup {
     this.setupModal();
 
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-    if (tab?.url) {
+    this.tabId = tab?.id;
+    if (tab?.url && /^https?:/.test(tab.url)) {
       try {
         this.hostname = new URL(tab.url).hostname;
       } catch (e) {
@@ -53,6 +55,9 @@ class Popup {
     await this.loadStatistics();
     await this.loadDisabledState();
     await this.loadToastSetting();
+    this.loadGPCSetting();
+    await this.loadPageStatus();
+    setInterval(() => this.loadPageStatus().catch(() => {}), 1500);
 
     document.getElementById('aboutVersion').textContent = `Version ${chrome.runtime.getManifest().version}`;
   }
@@ -76,6 +81,9 @@ class Popup {
   // ============ Home tab ============
 
   setupHomeTab() {
+    document.getElementById('reloadSite').addEventListener('click', async () => {
+      if (this.tabId != null) { await chrome.tabs.reload(this.tabId); window.close(); }
+    });
     const toggleBtn = document.getElementById('toggleSite');
     toggleBtn.addEventListener('click', async () => {
       const isDisabled = toggleBtn.dataset.disabled === 'true';
@@ -107,7 +115,7 @@ class Popup {
     const response = await this.sendMessage({ type: 'GET_DECISIONS', site: this.hostname });
     const decisions = response?.decisions || {};
     this.renderDecisions(decisions);
-    this.updateProtectionStatus(decisions);
+
   }
 
   /**
@@ -224,57 +232,40 @@ class Popup {
 
     this.policyEngine.setSiteOverride(this.hostname, category, next);
     await this.persistPolicy(this.currentPreset);
-    await this.sendMessage({
-      type: 'SET_SITE_OVERRIDE',
-      site: this.hostname,
-      category,
-      decision: next
-    });
 
     await this.loadDecisions();
     await this.loadSiteOverrides();
   }
 
-  updateProtectionStatus(decisions) {
+  async loadPageStatus() {
+    const state = this.tabId != null ? await this.sendMessage({ type: 'GET_PAGE_STATE', tabId: this.tabId }) : {};
+    const labels = {
+      initializing: 'Preparing banner handling', searching: 'Looking for a supported banner',
+      handled: 'Banner handled', nothing: 'No supported banner found',
+      unverified: 'Banner detected; no action confirmed', disabled: 'Banner handling paused on this site',
+      manual: 'Manual choice requested by your policy', error: 'Banner handling needs attention',
+      unavailable: 'Page status unavailable — try reloading', reload: 'Settings saved — reload to apply'
+    };
     const el = document.getElementById('protectionStatus');
-    const values = Object.values(decisions);
-    if (values.length === 0) {
-      el.textContent = 'Unable to determine status';
-      el.className = 'status-banner';
-      return;
-    }
-    const rejectCount = values.filter(d => d === 'reject').length;
-    const allowCount = values.filter(d => d === 'allow').length;
-
-    if (rejectCount > 0 && allowCount <= 1) {
-      el.textContent = 'Fully protected';
-      el.className = 'status-banner protected';
-    } else if (rejectCount > 0) {
-      el.textContent = 'Partially protected';
-      el.className = 'status-banner partial';
-    } else {
-      el.textContent = 'Minimal protection';
-      el.className = 'status-banner unprotected';
-    }
+    el.textContent = this.hostname ? (labels[state?.status] || labels.unavailable) : 'Open a website to use Crumb Control';
+    el.className = `status-banner${state?.status === 'handled' ? ' protected' : ''}`;
+    const reload = document.getElementById('reloadSite');
+    reload.hidden = !this.hostname || !['reload', 'unavailable', 'error'].includes(state?.status);
   }
 
   async loadDisabledState() {
     const { disabledPages } = await chrome.storage.sync.get({ disabledPages: {} });
     const isDisabled = !!disabledPages[this.hostname];
     const toggleBtn = document.getElementById('toggleSite');
+    toggleBtn.disabled = !this.hostname;
+    document.getElementById('reportIssue').disabled = !this.hostname;
     toggleBtn.dataset.disabled = isDisabled.toString();
     toggleBtn.textContent = isDisabled ? 'Enable on this site' : 'Disable on this site';
   }
 
   async toggleSiteProtection(disable) {
-    const { disabledPages } = await chrome.storage.sync.get({ disabledPages: {} });
-    if (disable) {
-      disabledPages[this.hostname] = true;
-    } else {
-      delete disabledPages[this.hostname];
-    }
-    await chrome.storage.sync.set({ disabledPages });
-    this.sendMessage({ type: 'POLICY_UPDATED' }).catch(() => {});
+    await this.sendMessage({ type: 'SET_SITE_DISABLED', site: this.hostname, disabled: disable });
+    await this.loadPageStatus();
   }
 
   // ============ Log tab ============
@@ -303,7 +294,7 @@ class Popup {
     document.getElementById('clearAudit').addEventListener('click', async (e) => {
       e.preventDefault();
       if (!confirm('Clear entire audit log? This cannot be undone.')) return;
-      await chrome.storage.local.set({ udp_audit_log: [] });
+      await this.sendMessage({ type: 'CLEAR_AUDIT_LOG' });
       this.currentAuditPage = 1;
       await this.loadAuditLog();
     });
@@ -385,6 +376,14 @@ class Popup {
       toastToggle.dispatchEvent(new Event('change', { bubbles: true }));
     });
 
+    const gpcToggle = document.getElementById('gpcToggle');
+    gpcToggle.addEventListener('change', () => this.onGPCToggleChange());
+    document.getElementById('gpcSettingRow').addEventListener('click', (e) => {
+      if (e.target.closest('.switch')) return;
+      gpcToggle.checked = !gpcToggle.checked;
+      gpcToggle.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+
     document.getElementById('btnAddSiteOverride').addEventListener('click', () => this.openSiteOverrideModal());
 
     document.getElementById('btnValidatePolicy').addEventListener('click', () => this.validatePolicy());
@@ -453,8 +452,24 @@ class Popup {
     document.getElementById('toastToggleState').classList.toggle('on', toastToggle.checked);
   }
 
+  loadGPCSetting() {
+    const toggle = document.getElementById('gpcToggle');
+    toggle.checked = this.policyEngine.getGPCConfig().enabled;
+    document.getElementById('gpcToggleState').textContent = toggle.checked ? 'On' : 'Off';
+    document.getElementById('gpcToggleState').classList.toggle('on', toggle.checked);
+  }
+
+  async onGPCToggleChange() {
+    const toggle = document.getElementById('gpcToggle');
+    this.policyEngine.policy.gpc.enabled = toggle.checked;
+    await this.persistPolicy(this.currentPreset);
+    this.loadGPCSetting();
+    this.updatePolicyEditor();
+  }
+
   async persistPolicy(preset) {
     await this.sendMessage({ type: 'SET_POLICY', policy: this.policyEngine.serialize(), preset });
+    await this.loadPageStatus();
   }
 
   // ---- Advanced: policy YAML editor ----
@@ -483,10 +498,11 @@ class Popup {
 
   async resetPolicy() {
     if (!confirm('Reset policy to defaults? This cannot be undone.')) return;
-    await this.sendMessage({ type: 'SET_PRESET', preset: 'essential' });
+    await this.sendMessage({ type: 'SET_POLICY', policy: this.policyEngine.getDefaultPolicy() });
     await this.loadPolicy();
     this.currentPreset = 'essential';
     this.renderToggles();
+    this.loadGPCSetting();
     await this.loadDecisions();
   }
 
@@ -494,15 +510,17 @@ class Popup {
     const editor = document.getElementById('policyEditor');
     try {
       const parsed = this.policyEngine.parseYAML(editor.value);
-      this.policyEngine.load(parsed);
-      const validation = this.policyEngine.validate();
+      const candidate = new PolicyEngine(parsed);
+      const validation = candidate.validate();
       if (!validation.valid) {
         alert('Policy has validation errors:\n' + validation.errors.join('\n'));
         return;
       }
+      this.policyEngine = candidate;
       await this.persistPolicy('custom');
       this.currentPreset = 'custom';
       this.renderToggles();
+      this.loadGPCSetting();
       this.validatePolicy();
       await this.loadDecisions();
     } catch (e) {
@@ -525,7 +543,7 @@ class Popup {
       <div class="site-override-item" data-host="${this.escapeHtml(host)}">
         <div class="site-override-info">
           <span class="site-override-host">${this.escapeHtml(host)}</span>
-          <span class="site-override-rule">${Object.entries(rules).map(([cat, dec]) => `${cat}: ${dec}`).join(', ')}</span>
+          <span class="site-override-rule">${Object.entries(rules).map(([cat, dec]) => `${this.escapeHtml(cat)}: ${this.escapeHtml(dec)}`).join(', ')}</span>
         </div>
         <div class="site-override-actions">
           <button class="btn btn-ghost btn-sm" data-edit="${this.escapeHtml(host)}">Edit</button>
@@ -577,7 +595,9 @@ class Popup {
   }
 
   async saveSiteOverride() {
-    const host = document.getElementById('modalSite').value.trim();
+    let host;
+    try { host = new URL('https://' + document.getElementById('modalSite').value.trim()).hostname; }
+    catch { alert('Enter a valid hostname, such as example.com'); return; }
     const category = document.getElementById('modalCategory').value;
     const decision = document.getElementById('modalDecision').value;
     if (!host) return;
@@ -614,8 +634,9 @@ class Popup {
   // ============ Utilities ============
 
   sendMessage(message) {
-    return new Promise((resolve) => {
-      chrome.runtime.sendMessage(message, (response) => resolve(response));
+    return chrome.runtime.sendMessage(message).then(response => {
+      if (response?.error) throw new Error(response.error);
+      return response;
     });
   }
 

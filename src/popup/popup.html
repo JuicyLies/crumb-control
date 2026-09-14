@@ -33,7 +33,6 @@
         </svg>
       </button>
     </nav>
-
     <div class="main">
       <!-- ===== Home / Status ===== -->
       <section class="tab-panel active" id="tab-home">
@@ -42,7 +41,7 @@
           <span class="site-name" id="currentSite">—</span>
         </header>
         <div class="main-content">
-          <div class="status-banner" id="protectionStatus">Checking...</div>
+          <div class="status-banner" id="protectionStatus" role="status" aria-live="polite">Checking...</div>
 
           <div class="counter-card" id="counterCard">
             <span class="counter-value" id="counterValue">0</span>
@@ -58,10 +57,12 @@
             <div class="tracker-cats" id="trackerCats"></div>
           </div>
 
-          <div class="section-label">Consent decisions <span class="label-hint">tap to change for this site</span></div>
+          <div class="section-label">Your consent preferences <span class="label-hint">tap to change for this site</span></div>
           <div class="decisions-grid" id="decisionsGrid"><!-- populated by JS --></div>
 
+          <p class="label-hint">Choices apply when a banner is available. Existing site consent may remain saved. The GPC signal is controlled separately in Settings.</p>
           <div class="home-actions">
+            <button class="btn btn-secondary" id="reloadSite" hidden>Reload to apply settings</button>
             <button class="btn btn-secondary" id="toggleSite">Disable on this site</button>
             <button class="btn btn-ghost" id="reportIssue">Report broken cookie banner</button>
           </div>
@@ -153,6 +154,16 @@
             <span class="toggle-state" id="toastToggleState">On</span>
           </div>
 
+          <div class="section-label">Privacy signal</div>
+          <div class="toggle-row" id="gpcSettingRow">
+            <span class="toggle-info">
+              <span class="toggle-name">Global Privacy Control</span>
+              <span class="toggle-sub">Send <code>Sec-GPC: 1</code> to sites you visit</span>
+            </span>
+            <label class="switch"><input type="checkbox" id="gpcToggle" checked><span class="switch-slider"></span></label>
+            <span class="toggle-state" id="gpcToggleState">On</span>
+          </div>
+
           <details class="advanced">
             <summary>Advanced settings</summary>
             <div class="advanced-body">
@@ -183,7 +194,7 @@
 
               <div class="adv-block">
                 <div class="adv-block-title">CMP adapters</div>
-                <p class="adv-note">Built-in: Consent-O-Matic — inherits 200+ CMP rules (OneTrust, Cookiebot, Sourcepoint, Didomi, TrustArc, Usercentrics and more).</p>
+                <p class="adv-note">Built-in: Consent-O-Matic — uses its bundled rules for major consent platforms and individual sites.</p>
               </div>
 
             </div>
@@ -201,14 +212,14 @@
 
           <div class="about-section">
             <h3>What is this?</h3>
-            <p>Crumb Control answers cookie banners for you. You set your preferences once and it picks the right buttons on every site you visit — so you stop clicking "Reject All" through three layers of menus.</p>
+            <p>Crumb Control answers supported cookie banners for you. Set your preferences once and it uses the banner's own controls whenever it recognises one.</p>
             <p>It's the browser-level consent setting the EU's ePrivacy Regulation was supposed to give everyone, before lobbying shelved it.</p>
           </div>
 
           <div class="about-section">
             <h3>How it works</h3>
             <ul>
-              <li><strong>209 CMP rules</strong> — recognises OneTrust, Cookiebot, Quantcast, Didomi, Sourcepoint, Iubenda, Usercentrics and 200+ more</li>
+              <li><strong>Bundled rules</strong> — recognises major platforms including OneTrust, Cookiebot, Quantcast, Didomi, Sourcepoint, Iubenda and Usercentrics</li>
               <li><strong>Accent-tolerant matching</strong> — banners in Italian, French, German, Spanish and other languages match even with accents, curly apostrophes or odd spacing</li>
               <li><strong>Global Privacy Control</strong> — sends a <code>Sec-GPC: 1</code> header, which some laws legally require sites to honour</li>
               <li><strong>Per-site overrides</strong> — tap any decision on the Status tab to change it for that site alone</li>
@@ -217,8 +228,8 @@
 
           <div class="about-section">
             <h3>Your privacy</h3>
-            <p>No accounts, no analytics, no telemetry, no servers. Your settings, your activity log and your banner counter never leave this browser.</p>
-            <p>The only network request it makes is the <code>Sec-GPC</code> header on sites you're already visiting.</p>
+            <p>No accounts, no analytics, no telemetry, no servers. Activity and counters stay local. Your browser may sync settings between your signed-in devices; we receive none of this data.</p>
+            <p>Rules are bundled with the extension. It adds the <code>Sec-GPC: 1</code> header to supported requests when enabled.</p>
           </div>
 
           <div class="about-section">
@@ -272,7 +283,6 @@
       <div class="form-group">
         <label>Category</label>
         <select id="modalCategory" required>
-          <option value="necessary">Necessary</option>
           <option value="preferences">Preferences</option>
           <option value="analytics">Analytics</option>
           <option value="marketing">Marketing</option>
@@ -285,7 +295,7 @@
         <select id="modalDecision" required>
           <option value="allow">Allow</option>
           <option value="reject">Reject</option>
-          <option value="ask">Ask (default)</option>
+          <option value="ask">Ask (handle banner manually)</option>
         </select>
       </div>
       <div class="modal-actions">
